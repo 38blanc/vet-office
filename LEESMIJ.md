@@ -32,14 +32,34 @@ Webapp (Mac, Windows, iPhone, Android) en desktop-app (.dmg / .exe).
 | VET-apps | Werkbonnen → factuur in 1 klik (uren + materiaal), attesten → factuur/offerte, onderhoud-binnenkort-lijst, aanvragen van VET Secretaris |
 | Boekhouder | Alleen-lezen toegang + export (zip met PDF's, UBL, CSV en btw-roosters per kwartaal) |
 
+## 3b. Nieuw in versie 2
+- Logo van Heat/Work linksboven, en bij elke stap een knop "Openen ↗" naar de juiste website.
+- **Kosten** met de 72 kostencategorieën van Dexxter (eigen categorieën toevoegen kan), voorbeeldje van elke PDF/foto, **Ticket fotograferen** (camera) of uit galerij.
+- **Afschrijvingen** (pro rata per dag zoals Dexxter), **Auto's** (aftrekbaarheid volgens CO₂ en aankoopdatum), **Verzekeringen**.
+- **Personenbelasting & RSZ** zoals Dexxter: sociale bijdragen op geproratiseerde winst (+3,05% beheerskosten Xerius), voorafbetalingen per kwartaal, inschatting belasting, **aangiftehulp Tax-on-web** (codes 1600/1606/1632/1617 + PDF).
+- **IC-aangifte** (XML voor Intervat), **Rapporten** (inkomsten & uitgaven, per maand, klanten, openstaand), **Tijdlijn** die vanzelf meeschuift.
+- **VEKA-meldingen** vanuit Office; "gemeld" synchroniseert met VET Heat.
+- **Te factureren**: werkbon (VET Work) + attesten (VET Heat) samen → 1 factuur met werkbon en attesten als bijlage (mail en Peppol).
+- **Artikels** gedeeld met VET Work.
+
 ## 4. Peppol (wanneer je Dexxter loslaat)
 Je Peppol-ID (0208:1034973271) kan maar bij één toegangspunt tegelijk staan. Zolang Dexxter je facturen verstuurt, laat je het daar.
 1. Account op **recommand.eu** (gratis tot 25 documenten/maand) › bedrijf toevoegen › Peppol-registratie verhuizen van Dexxter (migratiesleutel).
 2. API-sleutel maken (type *basic*).
 3. Supabase › Edge Functions › Secrets: `RECOMMAND_KEY`, `RECOMMAND_SECRET`, `RECOMMAND_COMPANY` (bedrijfs-id, begint met `c_`).
+   Voor automatische ontvangst: kies zelf een lang geheim woord, zet het als secret `PEPPOL_HOOK_KEY` en voeg in Recommand › Webhooks de URL toe:
+   `https://pfxxzzdyzitcuhfrxaiq.supabase.co/functions/v1/vet-peppol-hook?k=<jouw geheim>`
+   Nieuwe aankoopfacturen komen dan vanzelf bij je kosten, en je krijgt een mail (zie 4b).
    Aanrader: ook `OWNER_ID` = `28087b70-9800-43f9-8c56-8a7c461ab711` (enkel jij mag versturen, niet je boekhouder).
 4. VET Office › Instellingen › Peppol › Test verbinding.
 De edge function `vet-peppol` staat al online.
+
+## 4b. Mail (Resend)
+1. Gratis account op resend.com › Domains › `vaneyentechnics.be` toevoegen › DNS-records zetten bij je domeinbeheerder.
+2. API key maken.
+3. Supabase-secrets: `RESEND_API_KEY`, `MAIL_FROM` = `Van Eyen Technics <info@vaneyentechnics.be>`, `MAIL_NOTIFY` = `info@vaneyentechnics.be`.
+4. VET Office › Instellingen › Mail › Testmail.
+Daarna kan je facturen met alle bijlagen rechtstreeks mailen, en krijg je een mail bij elke Peppol-factuur.
 
 ## 5. Bank koppelen
 1. Account op **enablebanking.com** › Production-app registreren, redirect-URL `https://38blanc.github.io/vet-office/index.html`.
@@ -71,4 +91,4 @@ VET Office leest aanvragen uit de cloud-tabel `docs` met `app = 'secretaris'`, `
 `{ naam, tel, mail, adres, toestel, probleem, bron: 'oproep'|'sms'|'whatsapp'|'web', ontvangen: ISO-datum }`.
 
 ## Bestanden
-`index.html` (scherm) · `office-app.js` (documenten, klanten) · `office-views.js` (overige schermen) · `office-core.js` (berekeningen, XML, UBL) · `office-pdf.js` (PDF-opmaak) · `office-cloud.js` (cloud, Peppol, bank, boekhouder) · `rules.js` (wetgeving) · `vet-sync.js` (gedeeld met Heat/Work) · `desktop-*` (Mac/Windows) · `supabase-*` (edge functions en SQL, ter info – staan al online)
+`index.html` (scherm) · `office-app.js` (documenten, klanten) · `office-views.js` (overige schermen) · `office-core.js` (berekeningen, XML, UBL) · `office-pdf.js` (PDF-opmaak) · `office-cloud.js` (cloud, Peppol, bank, boekhouder) · `rules.js` (wetgeving) · `vet-sync.js` (gedeeld met Heat/Work) · `desktop-*` (Mac/Windows) · `office-extra.js` (versie 2: kosten, belastingen, rapporten, tijdlijn, VEKA, dossiers) · `office-start.js` · `pdfjs*.js` (PDF-voorbeelden) · `supabase-*` (edge functions en SQL, ter info – staan al online)

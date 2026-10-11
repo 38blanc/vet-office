@@ -178,7 +178,7 @@ ${isSeller && (p.email || p.tel) ? `<cac:Contact>${p.tel ? `<cbc:Telephone>${xe(
   };
   const a = (v) => r2(v).toFixed(2);
   // pdf: base64 van de PDF (wordt als bijlage meegestuurd, zoals Dexxter)
-  C.ubl = (doc, cfg, pdfB64) => {
+  C.ubl = (doc, cfg, pdfB64, extra = []) => {
     const b = cfg.bedrijf || {}; const k = doc.klant || {};
     const cn = doc.type === 'creditnota';
     const t = C.totalen(doc); const s = 1; // creditnota: bedragen staan positief op de creditnota (UBL CreditNote)
@@ -210,6 +210,7 @@ ${notes ? `<cbc:Note>${xe(notes.slice(0, 4000))}</cbc:Note>` : ''}
 <cbc:BuyerReference>${xe(doc.klantRef || doc.nr)}</cbc:BuyerReference>
 ${cn && doc.ref ? `<cac:BillingReference><cac:InvoiceDocumentReference><cbc:ID>${xe(doc.ref.nr)}</cbc:ID>${doc.ref.datum ? `<cbc:IssueDate>${doc.ref.datum}</cbc:IssueDate>` : ''}</cac:InvoiceDocumentReference></cac:BillingReference>` : ''}
 ${pdfB64 ? `<cac:AdditionalDocumentReference><cbc:ID>${xe(doc.nr)}</cbc:ID><cac:Attachment><cbc:EmbeddedDocumentBinaryObject mimeCode="application/pdf" filename="${xe((cn ? 'Creditnota-' : 'Factuur-') + doc.nr)}.pdf">${pdfB64}</cbc:EmbeddedDocumentBinaryObject></cac:Attachment></cac:AdditionalDocumentReference>` : ''}
+${(extra || []).map((x, i) => `<cac:AdditionalDocumentReference><cbc:ID>${xe(doc.nr + '-B' + (i + 1))}</cbc:ID><cbc:DocumentDescription>${xe(x.naam)}</cbc:DocumentDescription><cac:Attachment><cbc:EmbeddedDocumentBinaryObject mimeCode="${xe(x.mime || 'application/pdf')}" filename="${xe(x.naam)}">${x.b64}</cbc:EmbeddedDocumentBinaryObject></cac:Attachment></cac:AdditionalDocumentReference>`).join('')}
 <cac:AccountingSupplierParty>${party(seller, true)}</cac:AccountingSupplierParty>
 <cac:AccountingCustomerParty>${party(k, false)}</cac:AccountingCustomerParty>
 ${!cn && b.iban ? `<cac:PaymentMeans><cbc:PaymentMeansCode>30</cbc:PaymentMeansCode><cbc:PaymentID>${xe(doc.ogm || doc.nr)}</cbc:PaymentID><cac:PayeeFinancialAccount><cbc:ID>${String(b.iban).replace(/\s/g, '')}</cbc:ID>${b.bic ? `<cac:FinancialInstitutionBranch><cbc:ID>${xe(b.bic)}</cbc:ID></cac:FinancialInstitutionBranch>` : ''}</cac:PayeeFinancialAccount></cac:PaymentMeans>

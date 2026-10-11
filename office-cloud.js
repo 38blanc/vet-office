@@ -8,7 +8,7 @@ const CLOUD = VETSync.create({
   pullApps: ['office', 'shared', 'work', 'heat', 'secretaris'],
   owner: () => EIGENAAR,
   readOnly: () => RO,
-  noFiles: (r) => ['heat', 'work', 'secretaris'].includes(r.app) || (r.app === 'office' && ['doc', 'peppolin'].includes(r.kind)),
+  noFiles: (r) => ['heat', 'work', 'secretaris'].includes(r.app) || (r.app === 'office' && ['doc', 'peppolin', 'uitgave'].includes(r.kind)),
   collect() {
     const out = [];
     S.docs.forEach((d) => out.push({ app: 'office', kind: 'doc', id: d.id, data: d }));
@@ -17,7 +17,9 @@ const CLOUD = VETSync.create({
     (S.bank.tx || []).forEach((t) => out.push({ app: 'office', kind: 'banktx', id: t.id, data: t }));
     Object.entries(S.klantx || {}).forEach(([id, x]) => { if (x && Object.keys(x).length) out.push({ app: 'office', kind: 'klantx', id, data: x }); });
     S.klanten.forEach((k) => out.push({ app: 'shared', kind: 'client', id: k.id, data: sharedVan(k) }));
-    out.push({ app: 'office', kind: 'settings', id: 'main', data: { cfg: S.cfg, seq: S.seq, artikels: S.artikels, aang: S.aang, bel: S.bel, aanvraagSt: S.aanvraagSt, bank: { rek: S.bank.rek, koppeling: S.bank.koppeling }, log: (S.log || []).slice(-300) } });
+    Object.entries(S.veka || {}).forEach(([id, x]) => out.push({ app: 'shared', kind: 'veka', id, data: x }));
+    if (S.artikelsKlaar || (S.artikels || []).length) { S.artikelsKlaar = true; } if (S.artikelsKlaar) out.push({ app: 'shared', kind: 'articles', id: 'main', data: { list: (S.artikels || []).map(artikelShared) } });
+    out.push({ app: 'office', kind: 'settings', id: 'main', data: { cfg: S.cfg, seq: S.seq, artikels: S.artikels, aang: S.aang, bel: S.bel, aanvraagSt: S.aanvraagSt, bank: { rek: S.bank.rek, koppeling: S.bank.koppeling }, invest: S.invest, wagens: S.wagens, verz: S.verz, ic: S.ic, log: (S.log || []).slice(-300) } });
     return out;
   },
   async apply(rows) {
@@ -29,24 +31,28 @@ const CLOUD = VETSync.create({
         else if (r.kind === 'banktx') { S.bank.tx = S.bank.tx || []; const i = S.bank.tx.findIndex((x) => x.id === r.id); if (del) { if (i > -1) S.bank.tx.splice(i, 1); } else if (i > -1) S.bank.tx[i] = d; else S.bank.tx.push(d); }
         else if (r.kind === 'klantx') { if (del) delete S.klantx[r.id]; else S.klantx[r.id] = d; }
         else if (r.kind === 'settings' && !del) {
-          if (d.cfg) S.cfg = Object.assign(nieuweCfg(), d.cfg); ['seq', 'artikels', 'aang', 'bel', 'aanvraagSt'].forEach((k) => { if (d[k]) S[k] = d[k]; });
+          if (d.cfg) S.cfg = Object.assign(nieuweCfg(), d.cfg); ['seq', 'aang', 'bel', 'aanvraagSt', 'invest', 'wagens', 'verz', 'ic'].forEach((k) => { if (d[k]) S[k] = d[k]; }); if (d.artikels && !S.artikelsKlaar && !(S.artikels || []).length) S.artikels = d.artikels;
           if (d.bank) { S.bank.rek = d.bank.rek || S.bank.rek; S.bank.koppeling = d.bank.koppeling || null; } if (d.log) S.log = d.log; regelsToepassen();
         }
+      } else if (r.app === 'shared' && r.kind === 'veka') { if (del) delete S.veka[r.id]; else S.veka[r.id] = d;
+      } else if (r.app === 'shared' && r.kind === 'articles' && !del) { artikelsOntvangen(d.list || []);
       } else if (r.app === 'shared' && r.kind === 'client') {
         const i = S.klanten.findIndex((k) => k.id === r.id);
         if (del) { if (i > -1) S.klanten.splice(i, 1); } else if (i > -1) Object.assign(S.klanten[i], d); else S.klanten.push(Object.assign({ id: r.id }, d));
       } else if (r.app === 'work') {
         if (r.kind === 'order') { const i = EXT.orders.findIndex((o) => o.id === r.id); if (del) { if (i > -1) EXT.orders.splice(i, 1); } else { const o = Object.assign({}, d, { sig: '', fotos: [] }); if (i > -1) EXT.orders[i] = o; else EXT.orders.push(o); } }
-        else if (r.kind === 'settings' && !del) EXT.workArt = (d.articles || []).map((a) => ({ n: a.n, p: a.p, u: a.u }));
+        else if (r.kind === 'settings' && !del) { EXT.workArt = (d.articles || []).map((a) => ({ id: a.id, n: a.n, p: a.p, u: a.u })); artikelsEersteKeer(); }
+      } else if (r.app === 'heat' && r.kind === 'settings' && !del) { EXT.heatCfg = { tech: (d.cfg || {}).tech || {} };
       } else if (r.app === 'heat' && r.kind === 'job') {
         const i = EXT.jobs.findIndex((j) => j.id === r.id);
-        if (del) { if (i > -1) EXT.jobs.splice(i, 1); } else { const j = { id: d.id, nr: d.nr, datum: d.datum, cid: d.cid, klant: d.klant, toestel: d.toestel, volgT: d.volgT, volgK: d.volgK, volgV: d.volgV, status: d.status }; if (i > -1) EXT.jobs[i] = j; else EXT.jobs.push(j); }
+        if (del) { if (i > -1) EXT.jobs.splice(i, 1); } else { const j = Object.assign({}, d, { sig: '', fotos: [], tickP1: [], tickP2: [], foto: '' }); if (i > -1) EXT.jobs[i] = j; else EXT.jobs.push(j); }
       } else if (r.app === 'secretaris' && r.kind === 'aanvraag') {
         const i = EXT.aanvragen.findIndex((a) => a.id === r.id);
         if (del) { if (i > -1) EXT.aanvragen.splice(i, 1); } else { const a = Object.assign({ id: r.id }, d); if (i > -1) EXT.aanvragen[i] = a; else EXT.aanvragen.push(a); }
       }
     }
     await save(true);
+    if (rows.some((r) => r.app === 'office' && r.kind === 'peppolin' && !r.deleted && r.data && !r.data.verwerkt)) setTimeout(() => window.peppolAuto && peppolAuto(), 300);
     const typing = ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement && document.activeElement.tagName);
     if (!typing && !document.querySelector('.mod')) R(); else sideR();
   },
@@ -96,7 +102,7 @@ async function peppolVerstuur() {
   try {
     toast('Versturen…', 4000);
     const pdf = await pdfVan(d); const b64 = await blobB64(pdf);
-    const xml = C.ubl(d, S.cfg, b64);
+    const extra = (await bijlageBestanden(d)).filter((x) => /pdf|png|jpe?g/.test(x.mime)); const xml = C.ubl(d, S.cfg, b64, extra);
     const r = await peppolCall({ action: 'send', recipient: naar, xml });
     d.peppol = { id: r.id || '', status: r.deliveryStatus || (r.sentOverPeppol ? 'verzonden' : 'aangeboden'), datum: new Date().toISOString(), naar };
     d.verzonden = d.peppol.datum; save(); sluit(); R(); toast('Verstuurd via Peppol ✓');
@@ -150,6 +156,19 @@ async function bankSync() {
   } catch (x) { alert('Bank: ' + x.message + (/expired|consent/i.test(x.message) ? '\nKoppel je bank opnieuw (Instellingen › Bank).' : '')); }
 }
 
+/* ---------------- mail (Resend) ---------------- */
+function vMailInst() {
+  return `<div class="c"><h2>Mail rechtstreeks versturen</h2><p class="mu">Om facturen met alle bijlagen (werkbon, attesten) rechtstreeks vanuit VET Office te mailen, en om een melding te krijgen als er een Peppol-factuur binnenkomt, gebruikt VET Office de maildienst Resend (gratis tot 3.000 mails per maand).</p>
+  <ol class="mu" style="margin:0 0 10px 18px;padding:0;line-height:1.8"><li>Maak een gratis account. ${ext(LK.resend, 'Resend')}</li><li>Voeg je domein <b>vaneyentechnics.be</b> toe en zet de getoonde DNS-records bij je domeinbeheerder (eenmalig). ${ext(LK.resendDomains, 'Domeinen')}</li><li>Maak een API-sleutel. ${ext(LK.resendKeys, 'API-sleutels')}</li><li>Zet in Supabase de secrets RESEND_API_KEY, MAIL_FROM (bv. <code>Van Eyen Technics &lt;info@vaneyentechnics.be&gt;</code>) en MAIL_NOTIFY (<code>info@vaneyentechnics.be</code>). ${ext(LK.supabaseSecrets, 'Supabase Secrets')}</li><li>Test hieronder.</li></ol>
+  ${inp('Afzender (zoals in MAIL_FROM)', 'S.cfg.mailVan', { ph: 'info@vaneyentechnics.be' })}
+  <div class="row wrap"><button onclick="mailTest()">Testmail naar mezelf</button><span class="mu" id="mlst">${S.cfg.mailActief ? '✓ actief' : ''}</span></div></div>`;
+}
+async function mailTest() {
+  const e = $('#mlst'); e.textContent = 'Bezig…';
+  try { const r = await CLOUD.call('vet-mail', { to: S.cfg.bedrijf.email, subject: 'Test VET Office', text: 'Dit is een testmail van VET Office. Het werkt!' }); if (r.error) throw new Error(r.error); S.cfg.mailActief = true; save(); e.textContent = '✓ Testmail verstuurd naar ' + S.cfg.bedrijf.email; }
+  catch (x) { S.cfg.mailActief = false; save(); e.textContent = '✗ ' + x.message; }
+}
+
 /* ---------------- boekhouder ---------------- */
 let TOEGANG = null;
 async function toegangLaden() { try { TOEGANG = await CLOUD.rpc('vet_access_list', {}); } catch (e) { TOEGANG = { fout: e.message }; } }
@@ -159,7 +178,7 @@ function vBoekhouder() {
   if (TOEGANG.fout) return `<div class="c"><h2>Boekhouder</h2><p class="mu">Nog niet ingesteld in de database (${esc(TOEGANG.fout.slice(0, 120))}).</p></div>`;
   const mijn = TOEGANG.filter((x) => x.owner === CLOUD.session().user.id), klanten = TOEGANG.filter((x) => x.member === CLOUD.session().user.id);
   return `<div class="c"><h2>Je boekhouder toegang geven</h2><p class="mu">Je boekhouder krijgt <b>alleen-lezen</b> toegang tot je facturen, uitgaven, btw en belastingen in VET Office (niet tot VET Heat of VET Work). Hij kan exporteren maar niets wijzigen.</p>
-  <ol class="mu" style="margin:0 0 10px 18px;padding:0;line-height:1.7"><li>Maak in Supabase › Authentication › Users een gebruiker aan met het e-mailadres van je boekhouder (nieuwe registraties staan uit).</li><li>Vul dat e-mailadres hieronder in.</li><li>Je boekhouder opent VET Office, logt in en kiest jouw administratie.</li></ol>
+  <ol class="mu" style="margin:0 0 10px 18px;padding:0;line-height:1.8"><li>Maak in Supabase een gebruiker aan met het e-mailadres van je boekhouder (nieuwe registraties staan uit). ${ext(LK.supabaseUsers, 'Supabase Users')}</li><li>Vul dat e-mailadres hieronder in.</li><li>Je boekhouder opent VET Office, logt in en kiest jouw administratie.</li></ol>
   <div class="row wrap"><input id="bhm" type="email" placeholder="e-mail boekhouder" style="max-width:300px;margin:0"><button onclick="boekhouderUitnodig()">Toegang geven</button></div>
   ${mijn.map((x) => `<div class="dl"><span>${esc(x.member_email)} · ${esc(x.rol)}</span><button class="lnk" onclick="boekhouderIntrekken('${x.member}')">Intrekken</button></div>`).join('')}</div>
   ${klanten.length ? `<div class="c"><h2>Administraties die jij mag bekijken</h2>${klanten.map((x) => `<div class="dl"><span>${esc(x.owner_email)}</span><button class="sm" onclick="boekhouderOpen('${x.owner}')">Openen</button></div>`).join('')}</div>` : ''}`;
@@ -174,5 +193,23 @@ async function boekhouderOpen(owner) {
   go('home'); await CLOUD.sync(); R();
 }
 async function boekhouderStop() { RO = false; EIGENAAR = null; CLOUD.reset(); S.docs = []; await load(); go('home'); CLOUD.sync(); }
+
+/* ---------------- gedeelde artikellijst (VET Office + VET Work) ---------------- */
+const eenhNaarWork = (u) => ({ stuks: 'stuk', uren: 'uur' }[u] || u || 'stuk');
+const eenhNaarOffice = (u) => ({ stuk: 'stuks', uur: 'uren' }[u] || u || 'stuks');
+const artikelShared = (a) => ({ id: a.id || uid('a'), n: a.n || '', p: a.p == null || a.p === '' ? null : C.num(a.p), u: eenhNaarWork(a.u), det: a.det || '', btw: a.btw || '' });
+function artikelsOntvangen(list) {
+  if (!S.artikelsKlaar) { // eerste keer: eigen artikels die nog niet in de gedeelde lijst staan, toevoegen
+    const namen = new Set(list.map((a) => (a.n || '').trim().toLowerCase()));
+    (S.artikels || []).forEach((a) => { if (a.n && !namen.has(a.n.trim().toLowerCase())) list.push(artikelShared(a)); });
+    S.artikelsKlaar = true; CLOUD.soon(500);
+  }
+  S.artikels = list.map((a) => Object.assign({}, a, { u: eenhNaarOffice(a.u) }));
+}
+function artikelsEersteKeer() { // nog geen gedeelde lijst: start met de artikels van VET Work + die van Office
+  if (S.artikelsKlaar) return;
+  const namen = new Set((S.artikels || []).map((a) => (a.n || '').trim().toLowerCase()));
+  (EXT.workArt || []).forEach((a) => { if (a.n && !namen.has(a.n.trim().toLowerCase())) (S.artikels = S.artikels || []).push({ id: a.id || uid('a'), n: a.n, p: a.p, u: eenhNaarOffice(a.u) }); });
+}
 
 Object.assign(window, { CLOUD, CLOUDST, CLOUDCARD });

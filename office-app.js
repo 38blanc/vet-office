@@ -61,7 +61,7 @@ async function load() {
   const d = await idbGet('main'); if (d) S = Object.assign(S, d);
   S.cfg = Object.assign(nieuweCfg(), S.cfg || {}); S.cfg.bedrijf = Object.assign(nieuweCfg().bedrijf, S.cfg.bedrijf || {}); S.cfg.nummer = Object.assign(nieuweCfg().nummer, S.cfg.nummer || {}); S.cfg.opm = Object.assign(nieuweCfg().opm, S.cfg.opm || {});
   const e = await idbGet('ext'); if (e) Object.assign(EXT, e);
-  regelsToepassen();
+  regelsToepassen(); if (window.migreer) migreer();
 }
 function regelsToepassen() { // eigen aanpassingen van de regels (Instellingen › Regels) over rules.js leggen
   const o = S.cfg.regels || {};
@@ -86,14 +86,16 @@ function set(path, val, num) {
   o[ks[ks.length - 1]] = num ? C.num(val) : val; save(); if (v === 'doc') totalenTonen();
 }
 const nav = [
-  ['home', '🏠', 'Overzicht'], null, ['facturen', '🧾', 'Facturen'], ['offertes', '📝', 'Offertes'], ['creditnotas', '↩️', "Creditnota's"], ['klanten', '👥', 'Klanten'],
-  'Kosten & bank', ['uitgaven', '💸', 'Uitgaven'], ['peppol', '📥', 'Peppol-inbox'], ['bank', '🏦', 'Bank'],
-  'Aangiftes', ['btw', '📊', 'Btw-aangifte'], ['belasting', '🧮', 'Belastingen & RSZ'],
-  'VET-apps', ['werkbonnen', '🔧', 'Werkbonnen'], ['attesten', '🔥', 'Attesten'], ['aanvragen', '📞', 'Aanvragen'],
-  null, ['instellingen', '⚙️', 'Instellingen']
+  ['home', '🏠', 'Overzicht'], ['tijdlijn', '🗓', 'Tijdlijn'],
+  'Verkoop', ['werkbonnen', '🔧', 'Te factureren'], ['facturen', '🧾', 'Facturen'], ['offertes', '📝', 'Offertes'], ['creditnotas', '↩️', "Creditnota's"], ['klanten', '👥', 'Klanten'],
+  'Aankoop', ['uitgaven', '💸', 'Kosten'], ['peppol', '📥', 'Peppol-inbox'], ['invest', '🛠', 'Afschrijvingen'], ['wagens', '🚐', "Auto's"], ['bank', '🏦', 'Bank'],
+  'Aangiftes', ['btw', '📊', 'Btw-aangifte'], ['ic', '🇪🇺', 'IC-aangifte'], ['belasting', '🧮', 'Personenbelasting & RSZ'], ['rapport', '📈', 'Rapporten'],
+  'VET-apps', ['veka', '📨', 'VEKA-meldingen'], ['attesten', '🔥', 'Attesten'], ['aanvragen', '📞', 'Aanvragen'],
+  null, ['verz', '🛡', 'Verzekeringen'], ['instellingen', '⚙️', 'Instellingen']
 ];
 function telling(k) {
-  if (k === 'werkbonnen') return teFactureren().length;
+  if (k === 'werkbonnen') return teFactureren().length + losseAttesten().length;
+  if (k === 'veka') return EXT.jobs.filter(vekaNodig).length;
   if (k === 'peppol') return (S.peppolIn || []).filter((p) => !p.verwerkt).length;
   if (k === 'aanvragen') return EXT.aanvragen.filter((a) => !(S.aanvraagSt[a.id] || {}).st).length;
   if (k === 'facturen') return S.docs.filter((d) => isFactuur(d) && status(d) === 'vervallen').length;
@@ -102,7 +104,7 @@ function telling(k) {
 function sideR() {
   const actief = { doc: cur && (curDoc() || {}).type, klant: 'klanten', uitgave: 'uitgaven' };
   let on = v; if (v === 'doc') { const t = (curDoc() || {}).type; on = t === 'offerte' ? 'offertes' : t === 'creditnota' ? 'creditnotas' : 'facturen'; } else if (actief[v] && v !== 'doc') on = actief[v];
-  $('#side').innerHTML = `<div class="brand"><img src="icon-192.png" alt="">VET Office</div>` + nav.map((n) => {
+  $('#side').innerHTML = `<div class="brand"><img src="logo-app.png" alt="Van Eyen Technics" class="blogo"><span>VET Office</span></div>` + nav.map((n) => {
     if (n === null) return '<div style="height:8px"></div>';
     if (typeof n === 'string') return `<div class="grp">${n}</div>`;
     const c = telling(n[0]);
@@ -112,14 +114,14 @@ function sideR() {
 function go(nv, id, s) { v = nv; cur = id ?? null; sub = s || ''; menu(0); R(); scrollTo(0, 0); }
 function R() {
   sideR();
-  const views = { home: vHome, facturen: () => vDocs('factuur'), offertes: () => vDocs('offerte'), creditnotas: () => vDocs('creditnota'), doc: vDoc, klanten: vKlanten, klant: vKlant, uitgaven: vUitgaven, uitgave: vUitgave, peppol: vPeppol, bank: vBank, btw: vBtw, belasting: vBelasting, werkbonnen: vWerkbonnen, attesten: vAttesten, aanvragen: vAanvragen, instellingen: vInstellingen };
+  const views = { home: vHome, facturen: () => vDocs('factuur'), offertes: () => vDocs('offerte'), creditnotas: () => vDocs('creditnota'), doc: vDoc, klanten: vKlanten, klant: vKlant, uitgaven: vUitgaven, uitgave: vUitgave, peppol: vPeppol, invest: vInvest, wagens: vWagens, verz: vVerz, ic: vIc, rapport: vRapport, tijdlijn: vTijdlijn, veka: vVeka, bank: vBank, btw: vBtw, belasting: vBelasting, werkbonnen: vWerkbonnen, attesten: vAttesten, aanvragen: vAanvragen, instellingen: vInstellingen };
   const ban = [];
   if (RO) ban.push(`<div class="ban b">👁 Je bekijkt de administratie van <b>${esc(S.cfg.bedrijf.naam)}</b> als boekhouder (alleen lezen). <button class="sm b2" onclick="boekhouderStop()">Terug naar mijn eigen account</button></div>`);
   else if (S.cfg.dexxter && ['home', 'facturen', 'doc', 'btw'].includes(v)) ban.push(`<div class="ban o">Dexxter-modus: Dexxter blijft je officiële facturatie. VET Office werkt hiernaast ter controle (PDF's krijgen "KOPIE", Peppol staat uit). Uitschakelen kan in <a onclick="go('instellingen',null,'dexxter')" style="cursor:pointer;text-decoration:underline">Instellingen › Dexxter</a>.</div>`);
   $('#app').innerHTML = ban.join('') + (views[v] || vHome)();
   const c2 = $('#cloudst2'); if (c2 && window.CLOUDST) c2.innerHTML = CLOUDST();
   if (v === 'doc') totalenTonen();
-  if (v === 'uitgave') { const u = curUitgave(); const im = $('#ubij'); if (u && im && String(u.bijlage).startsWith('vf:') && window.CLOUD) CLOUD.file(u.bijlage).then((x) => { im.src = x; }).catch(() => {}); }
+  if (v === 'uitgave') bijlageVoorbeeld();
 }
 
 /* ---------------- documenten ---------------- */
@@ -219,7 +221,7 @@ function vDoc() {
     <input ${lk ? 'readonly' : ''} inputmode="decimal" value="${esc(l.korting || '')}" placeholder="0" oninput="lijnSet(${i},'korting',this.value,1)" title="Korting % op deze lijn">
     <div class="r tab" style="padding-top:8px" id="lt${i}">${eur(C.lijnEx(l))}</div>
     ${lk ? '<span></span>' : `<button class="lnk" title="Lijn verwijderen" onclick="lijnWeg(${i})">✕</button>`}</div>`).join('');
-  const opties = (S.artikels || []).concat(EXT.workArt || []).filter((a, i, arr) => a.n && arr.findIndex((x) => x.n === a.n) === i);
+  const opties = (S.artikels || []).filter((a) => a.n);
   const k = d.klant || {};
   const akties = [];
   if (!RO) {
@@ -262,6 +264,7 @@ function vDoc() {
   </div>
   ${isFactuur(d) && (d.betalingen || []).length ? `<div class="c"><h2>Betalingen</h2>${d.betalingen.map((b, i) => `<div class="dl"><span>${dt(b.datum)} · ${esc(b.via || 'overschrijving')}</span><span class="row"><b class="tab">${eur(b.bedrag)}</b>${RO ? '' : `<button class="lnk" onclick="betalingWeg(${i})">✕</button>`}</span></div>`).join('')}<div class="dl"><span>Nog open</span><b>${eur(t.open)}</b></div></div>` : ''}
   ${d.peppol ? `<div class="c"><h2>Peppol</h2><div class="dl"><span>Status</span><b>${esc(d.peppol.status || '')}</b></div><div class="dl"><span>Verzonden</span><span>${esc((d.peppol.datum || '').replace('T', ' ').slice(0, 16))}</span></div><div class="dl"><span>Ontvanger</span><span>${esc(d.peppol.naar || '')}</span></div></div>` : ''}
+  <div class="c"><h2>Bijlagen (gaan mee met de factuur)</h2>${(d.bijlagen || []).map((b, i) => `<div class="dl"><span>${b.soort === 'werkbon' ? '🔧' : b.soort === 'attest' ? '🔥' : '📎'} ${esc(b.naam)}</span><span class="row"><button class="lnk sm" onclick="bestandOpen(curDoc().bijlagen[${i}].ref)">Openen</button>${RO ? '' : `<button class="lnk sm" onclick="curDoc().bijlagen.splice(${i},1);save();R()">✕</button>`}</span></div>`).join('') || '<p class="mu">Geen bijlagen.</p>'}${RO ? '' : `<label class="btnl b2l" style="margin-top:6px">+ Bijlage (PDF)<input type="file" accept="application/pdf,image/*" style="display:none" onchange="bijlageDoc(this.files[0])"></label>`}</div>
   ${d.archief ? `<div class="c"><h2>Archief (10 jaar bewaren)</h2><div class="row wrap"><button class="b2 sm" onclick="archiefOpen('pdf')">Origineel PDF</button><button class="b2 sm" onclick="archiefOpen('ubl')">UBL (Peppol-XML)</button><span class="mu">vastgelegd op ${esc(String(d.archief.datum || '').slice(0, 10))}</span></div></div>` : ''}
   ${d.bron ? `<p class="mu">Gemaakt van ${esc(d.bron.label || d.bron.app)}.</p>` : ''}`;
 }
@@ -279,11 +282,11 @@ function werkurenAdd() {
   if (u > 1) lijnAdd({ oms: 'Werkuren (elk volgend uur)', aantal: C.r2(u - 1), eenheid: 'uren', prijs: S.cfg.uur2 });
 }
 function artikelVul(i, naam) {
-  const a = (S.artikels || []).concat(EXT.workArt || []).find((x) => x.n === naam); if (!a) return;
+  const a = (S.artikels || []).find((x) => x.n === naam); if (!a) return;
   const l = curDoc().lijnen[i]; if (a.p != null && !C.num(l.prijs)) l.prijs = C.num(a.p); if (a.u) l.eenheid = a.u === 'stuk' ? 'stuks' : a.u === 'uur' ? 'uren' : a.u; if (a.det && !l.det) l.det = a.det; if (a.btw) l.btw = a.btw; save(); R();
 }
 function artikelKies() {
-  const l = (S.artikels || []).concat(EXT.workArt || []).filter((a, i, arr) => a.n && arr.findIndex((x) => x.n === a.n) === i);
+  const l = (S.artikels || []).filter((a) => a.n);
   const m = modal(`<h2>Artikel kiezen</h2><input placeholder="Zoeken…" oninput="[...this.parentElement.querySelectorAll('.item')].forEach(e=>e.style.display=e.textContent.toLowerCase().includes(this.value.toLowerCase())?'':'none')">
   <div style="max-height:55vh;overflow:auto">${l.map((a, i) => `<div class="item dl" style="cursor:pointer" onclick="artikelNeem(${i})"><span>${esc(a.n)}${a.det ? `<div class="mu">${esc(a.det)}</div>` : ''}</span><span class="tab">${a.p != null ? eur(a.p) : ''}</span></div>`).join('') || '<p class="mu">Nog geen artikels. Voeg ze toe in Instellingen › Artikels (of in VET Work).</p>'}</div>`);
   window._artl = l; return m;
@@ -382,16 +385,23 @@ function verstuur() {
     <button ${S.cfg.dexxter || !peppolKan ? 'disabled' : ''} onclick="peppolVerstuur()">Versturen via Peppol</button></div>` : ''}
   <div class="c" style="background:var(--bg)"><b>Per e-mail</b><p class="mu" style="margin:6px 0">De PDF wordt gedownload (of gedeeld op gsm); daarna opent je mailprogramma met de tekst.</p>
   <label class="f"><span>Aan</span><input id="mto" value="${esc(k.email || '')}"></label><label class="f"><span>Tekst</span><textarea id="mtx" rows="7">${esc(mailTekst(d))}</textarea></label>
-  <button class="b2" onclick="mailVerstuur()">PDF + mail klaarzetten</button></div>
+  ${(d.bijlagen || []).length ? `<p class="mu">Bijlagen die meegaan: ${(d.bijlagen || []).map((b) => esc(b.naam)).join(', ')}</p>` : ''}
+  ${S.cfg.mailActief ? `<label class="row" style="gap:8px;margin-bottom:8px"><input id="mdirect" type="checkbox" checked style="width:auto;margin:0"> Rechtstreeks versturen vanaf ${esc(S.cfg.mailVan || S.cfg.bedrijf.email)} (met alle bijlagen)</label>` : `<p class="mu">Tip: stel "Mail" in bij Instellingen om rechtstreeks te mailen met alle bijlagen.</p>`}
+  <button class="b2" onclick="mailVerstuur()">Mail versturen / klaarzetten</button></div>
   <div class="row"><span class="sp"></span><button class="b2" onclick="markVerzonden()">Markeer als verzonden</button><button onclick="sluit()">Sluiten</button></div>`);
 }
 function markVerzonden() { const d = curDoc(); d.verzonden = new Date().toISOString(); save(); sluit(); R(); }
+async function bijlageDoc(f) { if (!f) return; const d = curDoc(); d.bijlagen = d.bijlagen || []; d.bijlagen.push({ naam: f.name, ref: await bestandData(f), soort: 'bijlage' }); save(); R(); }
+async function bijlageBestanden(d) { const out = []; for (const b of (d.bijlagen || [])) { try { const data = await (window.CLOUD ? CLOUD.file(b.ref) : b.ref); const mime = String(data).slice(5, String(data).indexOf(';')); out.push({ naam: b.naam, b64: String(data).split(',')[1], mime, file: new File([b64Blob(String(data).split(',')[1], mime)], b.naam, { type: mime }) }); } catch (e) { console.warn(e); } } return out; }
 async function mailVerstuur() {
-  const d = curDoc(); const blob = await pdfVan(d); const file = new File([blob], VET_PDF.naam(d), { type: 'application/pdf' });
+  const d = curDoc(); const blob = await pdfVan(d); const file = new File([blob], VET_PDF.naam(d), { type: 'application/pdf' }); const extra = await bijlageBestanden(d); const files = [file, ...extra.map((x) => x.file)];
   const to = $('#mto').value, tx = $('#mtx').value, onderwerp = TYPENAAM[d.type] + ' ' + d.nr + ' – ' + S.cfg.bedrijf.naam;
-  try { if (navigator.canShare && navigator.canShare({ files: [file] }) && /Android|iPhone|iPad/i.test(navigator.userAgent)) { await navigator.share({ files: [file], title: onderwerp, text: tx }); d.verzonden = new Date().toISOString(); save(); sluit(); R(); return; } } catch (e) { if (e.name === 'AbortError') return; }
-  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = file.name; a.click();
-  setTimeout(() => { location.href = 'mailto:' + encodeURIComponent(to) + '?subject=' + encodeURIComponent(onderwerp) + '&body=' + encodeURIComponent(tx + '\n\n(PDF in bijlage: ' + file.name + ')'); }, 600);
+  if (S.cfg.mailActief && $('#mdirect') && $('#mdirect').checked) {
+    try { toast('Mail versturen…', 3000); const r = await CLOUD.call('vet-mail', { to, subject: onderwerp, text: tx, attachments: [{ filename: file.name, content: await blobB64(blob) }, ...extra.map((x) => ({ filename: x.naam, content: x.b64 }))] }); if (r.error) throw new Error(r.error); d.verzonden = new Date().toISOString(); d.mail = { naar: to, datum: d.verzonden, id: r.id || '' }; save(); sluit(); R(); toast('Mail verstuurd ✓'); return; } catch (e) { return alert('Mail versturen mislukt: ' + e.message); }
+  }
+  try { if (navigator.canShare && navigator.canShare({ files }) && /Android|iPhone|iPad/i.test(navigator.userAgent)) { await navigator.share({ files, title: onderwerp, text: tx }); d.verzonden = new Date().toISOString(); save(); sluit(); R(); return; } } catch (e) { if (e.name === 'AbortError') return; }
+  files.forEach((f, i) => setTimeout(() => { const a = document.createElement('a'); a.href = URL.createObjectURL(f); a.download = f.name; a.click(); }, i * 400));
+  setTimeout(() => { location.href = 'mailto:' + encodeURIComponent(to) + '?subject=' + encodeURIComponent(onderwerp) + '&body=' + encodeURIComponent(tx + '\n\n(In bijlage: ' + files.map((f) => f.name).join(', ') + ')'); }, 600 + files.length * 400);
   d.verzonden = new Date().toISOString(); save(); sluit(); R();
 }
 
