@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="nl"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>VET Office</title>
+<link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#1b6a8a"><link rel="apple-touch-icon" href="apple-touch-icon.png"><link rel="icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="VET Office">
+<style>
+:root{--bg:#eceff2;--card:#fff;--tx:#14202b;--mu:#617080;--ac:#1b6a8a;--ac2:#e8f2f6;--bd:#d5dbe1;--rd:#c8321c;--ok:#23844a;--gr:#2e8c62;--gr2:#e6f4ec;--or:#c9741a;--or2:#fbf0e3;--side:#14303d;--sidetx:#cfe0e8}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#10171d;--card:#19232c;--tx:#e9eef2;--mu:#8e9cab;--ac:#4fb0d3;--ac2:#1d3340;--bd:#2c3945;--rd:#ff6a50;--ok:#4cc27d;--gr:#4cc27d;--gr2:#173326;--or:#f0a050;--or2:#3a2a17;--side:#0b141a;--sidetx:#b9cbd4}}
+:root[data-theme="dark"]{--bg:#10171d;--card:#19232c;--tx:#e9eef2;--mu:#8e9cab;--ac:#4fb0d3;--ac2:#1d3340;--bd:#2c3945;--rd:#ff6a50;--ok:#4cc27d;--gr:#4cc27d;--gr2:#173326;--or:#f0a050;--or2:#3a2a17;--side:#0b141a;--sidetx:#b9cbd4}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+#shell{display:flex;min-height:100vh}
+#side{width:228px;flex:none;background:var(--side);color:var(--sidetx);padding:14px 10px calc(14px + env(safe-area-inset-bottom,0px));position:sticky;top:0;height:100vh;overflow:auto}
+#side .brand{display:flex;align-items:center;gap:10px;padding:4px 8px 14px;color:#fff;font-weight:700;font-size:17px}
+#side .brand img{width:34px;height:34px;border-radius:8px;background:#fff}
+#side a{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;color:inherit;text-decoration:none;font-size:14.5px;cursor:pointer}
+#side a:hover{background:rgba(255,255,255,.07)}#side a.on{background:rgba(79,176,211,.22);color:#fff;font-weight:600}
+#side .grp{font-size:11px;text-transform:uppercase;letter-spacing:.08em;opacity:.55;padding:12px 10px 4px}
+#side .cnt{margin-left:auto;background:#e0a33a;color:#14202b;border-radius:99px;font-size:11px;padding:1px 7px;font-weight:700}
+#main{flex:1;min-width:0;padding:18px 22px 60px;padding-top:calc(18px + env(safe-area-inset-top,0px))}
+#topm{display:none}
+@media(max-width:860px){#side{position:fixed;z-index:30;left:0;top:0;transform:translateX(-105%);transition:transform .2s;visibility:hidden}#side.open{transform:none;visibility:visible;box-shadow:0 0 40px rgba(0,0,0,.3)}#topm{display:flex;align-items:center;gap:10px;margin-bottom:10px}#main{padding:12px 14px 70px;padding-top:calc(12px + env(safe-area-inset-top,0px))}#shade{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:20;display:none}#side.open+#shade{display:block}}
+h1{font-size:24px;margin:2px 0 14px;letter-spacing:-.02em}h2{font-size:15px;margin:0 0 10px;color:var(--mu);font-weight:600}h3{font-size:15px;margin:14px 0 8px}
+.c{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:14px;margin-bottom:12px}
+.grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(230px,1fr))}
+.kpi .v{font-size:24px;font-weight:700;font-variant-numeric:tabular-nums;margin-top:2px}.kpi .s{color:var(--mu);font-size:13px}
+input,textarea,select{width:100%;font:inherit;color:inherit;background:var(--bg);border:1px solid var(--bd);border-radius:8px;padding:9px 10px;margin:0 0 8px;min-width:0}
+textarea{min-height:64px;resize:vertical}input:focus,textarea:focus,select:focus,button:focus-visible{outline:2px solid var(--ac);outline-offset:1px}
+input[readonly],textarea[readonly]{opacity:.75}
+label.f{display:block}label.f>span{display:block;font-size:12.5px;color:var(--mu);margin-bottom:3px}
+button{font:inherit;font-weight:600;border:0;border-radius:8px;padding:9px 14px;background:var(--ac);color:#fff;cursor:pointer;white-space:nowrap}
+button:disabled{opacity:.45;cursor:default}
+.b2{background:var(--ac2);color:var(--ac)}.red{background:var(--rd);color:#fff}.ok{background:var(--ok)}.gr{background:var(--gr)}.sm{padding:5px 10px;font-size:13px}.lnk{background:none;color:var(--ac);padding:4px 6px}
+.row{display:flex;gap:8px;align-items:center}.row>*{margin-bottom:0}.wrap{flex-wrap:wrap}.sp{flex:1}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}.cols3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0 12px}
+@media(max-width:620px){.cols,.cols3{grid-template-columns:1fr}}
+.mu{color:var(--mu);font-size:13.5px}.r{text-align:right}.nw{white-space:nowrap}.tab{font-variant-numeric:tabular-nums}
+table.t{width:100%;min-width:520px;border-collapse:collapse;font-size:14px}table.t th{text-align:left;font-size:12px;color:var(--mu);font-weight:600;padding:6px 8px;border-bottom:1px solid var(--bd)}table.t td{padding:8px;border-bottom:1px solid var(--bd);vertical-align:top}
+table.t tr.cl{cursor:pointer}table.t tr.cl:hover td{background:var(--ac2)}
+.tag{font-size:12px;padding:2px 8px;border-radius:99px;background:var(--ac2);color:var(--ac);white-space:nowrap;font-weight:600}
+.tag.g{background:var(--gr2);color:var(--gr)}.tag.o{background:var(--or2);color:var(--or)}.tag.r{background:var(--rd);color:#fff}.tag.n{background:var(--bd);color:var(--mu)}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}.chip{background:var(--card);border:1px solid var(--bd);color:var(--tx);padding:6px 12px;border-radius:99px;font-size:13.5px;font-weight:600}.chip.on{background:var(--ac);border-color:var(--ac);color:#fff}
+.ban{border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:14px}.ban.o{background:var(--or2);color:var(--or);border:1px solid var(--or)}.ban.b{background:var(--ac2);color:var(--ac);border:1px solid var(--ac)}.ban.r{background:#fde8e4;color:var(--rd);border:1px solid var(--rd)}
+.lijn{display:grid;grid-template-columns:minmax(150px,2.4fr) 70px 80px 92px 96px 62px 90px 34px;gap:6px;align-items:start;border-bottom:1px solid var(--bd);padding:8px 0}
+.lijn input,.lijn select,.lijn textarea{margin:0;padding:7px 8px}.lijn textarea{min-height:36px;margin-top:4px;font-size:13.5px}
+.lijn.h{font-size:12px;color:var(--mu);font-weight:600;padding-top:0}
+@media(max-width:900px){.lijn{grid-template-columns:1fr 1fr 1fr;}.lijn>:first-child{grid-column:1/-1}.lijn.h{display:none}}
+.tot{margin-left:auto;max-width:330px}.tot div{display:flex;justify-content:space-between;padding:3px 0}.tot .big{font-size:19px;font-weight:700;color:var(--ac);border-top:1px solid var(--bd);margin-top:4px;padding-top:6px}
+.ac{position:relative}.ac .lst{position:absolute;left:0;right:0;top:100%;z-index:10;background:var(--card);border:1px solid var(--bd);border-radius:8px;max-height:260px;overflow:auto;box-shadow:0 8px 24px rgba(0,0,0,.15)}.ac .lst div{padding:8px 10px;cursor:pointer}.ac .lst div:hover{background:var(--ac2)}
+.mod{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:50;display:flex;align-items:flex-start;justify-content:center;padding:6vh 12px;overflow:auto}.mod .c{max-width:620px;width:100%}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:#14202b;color:#fff;padding:10px 16px;border-radius:10px;z-index:60;font-size:14px;max-width:92vw;box-shadow:0 8px 24px rgba(0,0,0,.25)}
+.pv{width:100%;height:78vh;border:1px solid var(--bd);border-radius:8px;background:#fff}
+.dl{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px dashed var(--bd)}.dl:last-child{border:0}
+.ph{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px}.ph img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px}
+.lk{opacity:.85}
+@media print{#side,#topm,.np{display:none!important}body{background:#fff}}
+</style></head><body>
+<div id="shell"><nav id="side"></nav><div id="shade" onclick="menu(0)"></div><main id="main"><div id="topm"><button class="b2" onclick="menu(1)">☰</button><b>VET Office</b><span class="sp"></span><span id="cloudst2"></span></div><div id="app"></div></main></div>
+<script src="rules.js"></script>
+<script src="qrcode.js"></script>
+<script src="office-core.js"></script>
+<script src="jspdf.umd.min.js"></script>
+<script src="office-pdf.js"></script>
+<script src="jszip.min.js"></script>
+<script src="office-app.js"></script>
+<script src="office-views.js"></script>
+<script src="vet-sync.js"></script>
+<script src="office-cloud.js"></script>
+<script>
+if ('serviceWorker' in navigator && location.protocol === 'https:') {
+  navigator.serviceWorker.register('sw.js').then((r) => r.update()).catch(() => {});
+  let herladen = false; navigator.serviceWorker.addEventListener('controllerchange', () => { if (!herladen) { herladen = true; location.reload(); } });
+}
+</script>
+</body></html>

@@ -1,0 +1,40 @@
+# VET Office desktop: bouwt de Mac-app (.dmg) en Windows-app (.exe).
+# Plaatsen: GitHub › repo vet-office › Actions › New workflow › "set up a workflow yourself",
+# naam: desktop.yml, plak deze tekst, Commit. Starten: Actions › VET Office desktop › Run workflow.
+name: VET Office desktop
+on:
+  workflow_dispatch:
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: macos-latest
+            script: dist:mac
+            files: app/dist/*.dmg
+          - os: windows-latest
+            script: dist:win
+            files: app/dist/*.exe
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v5
+      - name: Desktop-bestanden klaarzetten
+        shell: bash
+        run: |
+          mkdir -p app/build
+          cp desktop-main.js app/main.js
+          cp desktop-package.json app/package.json
+          cp icon-512.png app/build/icon.png
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - run: npm install
+        working-directory: app
+      - run: npm run ${{ matrix.script }}
+        working-directory: app
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: VET-Office-${{ runner.os }}
+          path: ${{ matrix.files }}

@@ -1,0 +1,46 @@
+{
+  "name": "vet-office",
+  "productName": "VET Office",
+  "version": "1.0.0",
+  "description": "VET Office – facturatie en administratie van Van Eyen Technics",
+  "author": "Van Eyen Technics",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist:mac": "electron-builder --mac dmg --universal",
+    "dist:win": "electron-builder --win nsis --x64"
+  },
+  "devDependencies": {
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "be.vaneyentechnics.vetoffice",
+    "productName": "VET Office",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "main.js",
+      "package.json"
+    ],
+    "mac": {
+      "category": "public.app-category.business",
+      "icon": "build/icon.png",
+      "target": "dmg"
+    },
+    "dmg": {
+      "title": "VET Office"
+    },
+    "win": {
+      "icon": "build/icon.png",
+      "target": "nsis"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "shortcutName": "VET Office"
+    }
+  }
+}
