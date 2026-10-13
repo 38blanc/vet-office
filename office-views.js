@@ -12,7 +12,7 @@ function vHome() {
   const verv = open.filter((d) => status(d) === 'vervallen');
   const rb = C.roosters(S.docs, S.uitgaven || [], k.j, k.q, (S.aang[KW(k.j, k.q)] || {}).extra);
   const bel = belastingRaming(j);
-  const tf = teFactureren(); const nieuweA = EXT.aanvragen.filter((a) => !(S.aanvraagSt[a.id] || {}).st);
+  const tf = teFactureren(); const nieuweA = EXT.aanvragen.filter((a) => !(S.aanvraagSt[a.id] || {}).st && !S.aanvraagWeg[a.id]);
   const binnenkort = EXT.jobs.filter((x) => { const n = volgendeControle(x); return n && n <= C.addDays(today(), 45) && n >= C.addDays(today(), -60); });
   return `<h1>Overzicht</h1>
   <div class="grid">
@@ -26,6 +26,7 @@ function vHome() {
     ${verv.length ? `<div class="dl" style="cursor:pointer" onclick="filt.st='vervallen';go('facturen')"><span>⏰ Vervallen facturen (herinnering sturen)</span><b>${verv.length}</b></div>` : ''}
     ${(S.peppolIn || []).filter((p) => !p.verwerkt).length ? `<div class="dl" style="cursor:pointer" onclick="go('peppol')"><span>📥 Nieuwe Peppol-facturen</span><b>${S.peppolIn.filter((p) => !p.verwerkt).length}</b></div>` : ''}
     ${nieuweA.length ? `<div class="dl" style="cursor:pointer" onclick="go('aanvragen')"><span>📞 Nieuwe aanvragen</span><b>${nieuweA.length}</b></div>` : ''}
+    ${window.ondhOpen && ondhOpen().length ? `<div class="dl" style="cursor:pointer" onclick="go('attesten',null,'binnenkort')"><span>🔥 Onderhoud binnenkort (nog niet herinnerd)</span><b>${ondhOpen().length}</b></div>` : ''}
     ${EXT.jobs.filter(vekaNodig).length ? `<div class="dl" style="cursor:pointer" onclick="go('veka')"><span>📨 VEKA-meldingen te doen</span><b>${EXT.jobs.filter(vekaNodig).length}</b></div>` : ''}
     ${(S.uitgaven || []).filter((u) => u.bron === 'peppol' && !u.gezien).length ? `<div class="dl" style="cursor:pointer" onclick="go('uitgaven')"><span>📥 Nieuwe Peppol-facturen bij je kosten</span><b>${S.uitgaven.filter((u) => u.bron === 'peppol' && !u.gezien).length}</b></div>` : ''}
     ${binnenkort.length ? `<div class="dl" style="cursor:pointer" onclick="go('attesten')"><span>🔥 Onderhoud binnenkort (VET Heat)</span><b>${binnenkort.length}</b></div>` : ''}
@@ -160,29 +161,57 @@ function vListing() {
 /* ---------------- attesten (VET Heat) ---------------- */
 function vAttesten() {
   const fl = sub || 'binnenkort'; const nu = today();
-  let l = EXT.jobs.slice();
-  if (fl === 'binnenkort') l = l.filter((j) => { const n = volgendeControle(j); return n && n <= C.addDays(nu, 60); });
+  let l = fl === 'binnenkort' ? laatsteAttesten().filter((j) => { const n = volgendeControle(j); return n && n <= C.addDays(nu, 60); }) : EXT.jobs.slice();
   l.sort((a, b) => fl === 'binnenkort' ? (volgendeControle(a) || '').localeCompare(volgendeControle(b) || '') : (b.datum || '').localeCompare(a.datum || ''));
+  const bk = fl === 'binnenkort';
   return `<h1>Onderhoudsattesten (VET Heat)</h1>
   <div class="chips">${[['binnenkort', 'Onderhoud binnenkort'], ['alle', 'Alle attesten']].map(([k, lb]) => `<button class="chip ${fl === k ? 'on' : ''}" onclick="go('attesten',null,'${k}')">${lb}</button>`).join('')}</div>
-  <div class="c" style="padding:0;overflow:auto"><table class="t"><tr><th>Attest</th><th>Klant</th><th>Toestel</th><th>Datum</th><th>Volgende</th><th></th></tr>
-  ${l.map((j) => { const n = volgendeControle(j); const f = S.docs.some((d) => d.bron && d.bron.app === 'heat' && d.bron.id === j.id); return `<tr><td class="nw"><b>${esc(j.nr)}</b></td><td>${esc(j.klant && j.klant.n)}<div class="mu">${esc([j.klant && j.klant.straat, j.klant && j.klant.pc].filter(Boolean).join(', '))}</div></td><td>${esc([j.toestel && j.toestel.merk, j.toestel && j.toestel.type].filter(Boolean).join(' '))}</td><td class="nw">${dt(j.datum)}</td><td class="nw" style="color:${n && n < nu ? 'var(--rd)' : ''}">${dt(n)}</td><td class="nw">${RO ? '' : f ? '<span class="tag g">gefactureerd</span>' : `<button class="sm b2" onclick="attestDoc('${j.id}','factuur')">Factuur</button> <button class="sm b2" onclick="attestDoc('${j.id}','offerte')">Offerte</button>`}</td></tr>`; }).join('') || '<tr><td colspan="6" class="mu" style="padding:16px">Niets gevonden. Log in VET Heat in bij Cloud met hetzelfde account.</td></tr>'}</table></div>`;
+  ${bk && !RO && l.length ? `<div class="row wrap" style="margin:0 0 10px"><span class="mu">Klanten wiens volgende onderhoud binnen 60 dagen valt (of al voorbij is). Stuur ze een herinnering: dat levert vanzelf nieuw werk op.</span><span class="sp"></span><button class="sm b2" onclick="ondhTekstAanpassen()">Tekst aanpassen</button>${S.cfg.mailActief ? `<button class="sm" onclick="ondhStuur([...document.querySelectorAll('.ondh:checked')].map((e)=>e.value))">📧 Herinnering naar geselecteerde</button>` : ''}</div>` : ''}
+  <div class="c" style="padding:0;overflow:auto"><table class="t"><tr>${bk && !RO ? `<th><input type="checkbox" style="width:auto;margin:0" title="Alles" onchange="document.querySelectorAll('.ondh').forEach((e)=>e.checked=this.checked)"></th>` : ''}<th>Attest</th><th>Klant</th><th>Toestel</th><th>Datum</th><th>Volgende</th><th></th></tr>
+  ${l.map((j) => { const n = volgendeControle(j); const f = S.docs.some((d) => d.bron && d.bron.app === 'heat' && d.bron.id === j.id); const m = ondhMail(j); const her = S.onderhoudMail[j.id];
+    return `<tr>${bk && !RO ? `<td>${m ? `<input class="ondh" type="checkbox" value="${j.id}" ${her ? '' : 'checked'} style="width:auto;margin:0">` : ''}</td>` : ''}<td class="nw"><b>${esc(j.nr)}</b></td><td>${esc(j.klant && j.klant.n)}<div class="mu">${esc([j.klant && j.klant.straat, j.klant && j.klant.pc].filter(Boolean).join(', '))}</div>${bk ? `<div class="mu">${m ? esc(m) : 'geen e-mailadres' + (j.klant && j.klant.tel ? ' · ' + esc(j.klant.tel) : '')}</div>` : ''}</td><td>${esc([j.toestel && j.toestel.merk, j.toestel && j.toestel.type].filter(Boolean).join(' '))}</td><td class="nw">${dt(j.datum)}</td><td class="nw" style="color:${n && n < nu ? 'var(--rd)' : ''}">${dt(n)}</td>
+    <td class="nw">${RO ? '' : bk ? (her ? `<span class="tag g">herinnerd ${dt(her)}</span> ` : '') + (m ? `<button class="sm b2" onclick="ondhStuur(['${j.id}'])">📧 Mail</button>` : j.klant && j.klant.tel ? `<a href="tel:${esc(j.klant.tel)}"><button class="sm b2">Bellen</button></a>` : '') : f ? '<span class="tag g">gefactureerd</span>' : `<button class="sm b2" onclick="attestDoc('${j.id}','factuur')">Factuur</button> <button class="sm b2" onclick="attestDoc('${j.id}','offerte')">Offerte</button>`}</td></tr>`; }).join('') || `<tr><td colspan="7" class="mu" style="padding:16px">${bk ? 'Geen onderhoud binnen de 60 dagen.' : 'Niets gevonden. Log in VET Heat in bij Cloud met hetzelfde account.'}</td></tr>`}</table></div>`;
 }
 /* ---------------- aanvragen (VET Secretaris) ---------------- */
+const AANVR_KLAAR = ['afgehandeld', 'klant', 'afgewezen']; // telt als "afgehandeld" op de secretaris-gsm
 function vAanvragen() {
   const fl = sub || 'nieuw'; const st = (a) => (S.aanvraagSt[a.id] || {}).st || 'nieuw';
-  const l = EXT.aanvragen.filter((a) => fl === 'alle' || st(a) === fl).sort((a, b) => String(b.ontvangen || '').localeCompare(String(a.ontvangen || '')));
-  const sts = ['nieuw', 'gebeld', 'ingepland', 'offerte', 'klant', 'afgewezen'];
+  const alle = EXT.aanvragen.filter((a) => !S.aanvraagWeg[a.id]);
+  const l = alle.filter((a) => fl === 'alle' || st(a) === fl).sort((a, b) => String(b.ontvangen || '').localeCompare(String(a.ontvangen || '')));
+  const sts = ['nieuw', 'gebeld', 'ingepland', 'offerte', 'klant', 'afgehandeld', 'afgewezen'];
+  const klaar = alle.filter((a) => AANVR_KLAAR.includes(st(a))).length;
   return `<h1>Aanvragen (VET Secretaris)</h1>
-  <div class="chips">${[...sts, 'alle'].map((k) => `<button class="chip ${fl === k ? 'on' : ''}" onclick="go('aanvragen',null,'${k}')">${k} ${k !== 'alle' ? '(' + EXT.aanvragen.filter((a) => st(a) === k).length + ')' : ''}</button>`).join('')}</div>
-  ${l.map((a) => `<div class="c"><div class="row wrap"><b>${esc(a.naam || a.tel || 'Onbekend')}</b><span class="tag n">${esc(a.bron || '')}</span><span class="mu">${esc(String(a.ontvangen || '').replace('T', ' ').slice(0, 16))}</span><span class="sp"></span>${RO ? '' : `<select style="width:auto;margin:0" onchange="(S.aanvraagSt['${a.id}']=S.aanvraagSt['${a.id}']||{}).st=this.value;save();R()">${sts.map((s) => `<option ${st(a) === s ? 'selected' : ''}>${s}</option>`).join('')}</select>`}</div>
+  <div class="chips">${[...sts, 'alle'].map((k) => `<button class="chip ${fl === k ? 'on' : ''}" onclick="go('aanvragen',null,'${k}')">${k} ${k !== 'alle' ? '(' + alle.filter((a) => st(a) === k).length + ')' : ''}</button>`).join('')}</div>
+  ${!RO && klaar ? `<div class="row" style="margin:0 0 10px"><span class="mu">${klaar} afgehandeld (klant, afgehandeld of afgewezen)</span><span class="sp"></span><button class="sm b2" onclick="aanvragenOpruimen()">🗑 Verwijder alle afgehandelde</button></div>` : ''}
+  ${l.map((a) => `<div class="c"><div class="row wrap"><b>${esc(a.naam || a.tel || 'Onbekend')}</b><span class="tag n">${esc(a.bron || '')}</span><span class="mu">${esc(String(a.ontvangen || '').replace('T', ' ').slice(0, 16))}</span><span class="sp"></span>${RO ? '' : `<select style="width:auto;margin:0" onchange="aanvraagStatus('${a.id}',this.value)">${sts.map((s) => `<option ${st(a) === s ? 'selected' : ''}>${s}</option>`).join('')}</select>`}</div>
     <div class="mu" style="margin-top:6px">${esc([a.tel, a.adres, a.toestel].filter(Boolean).join(' · '))}</div><p style="margin:6px 0">${esc(a.probleem || a.bericht || '')}</p>
-    ${RO ? '' : `<div class="row wrap">${a.tel ? `<a href="tel:${esc(a.tel)}"><button class="sm b2">Bellen</button></a>` : ''}<button class="sm b2" onclick="aanvraagKlant('${a.id}')">Maak klant + offerte</button></div>`}</div>`).join('') || `<div class="c mu">Geen aanvragen${fl !== 'alle' ? ' met status "' + fl + '"' : ''}. Zodra VET Secretaris aanvragen in de cloud zet, verschijnen ze hier.</div>`}`;
+    ${RO ? '' : `<div class="row wrap">${a.tel ? `<a href="tel:${esc(a.tel)}"><button class="sm b2">Bellen</button></a>` : ''}<button class="sm b2" onclick="aanvraagWerkbon('${a.id}')">🔧 Werkbon in VET Work</button><button class="sm b2" onclick="aanvraagKlant('${a.id}')">Maak klant + offerte</button>${(S.aanvraagSt[a.id] || {}).wb ? `<span class="tag g">werkbon ${(() => { const o = EXT.orders.find((x) => x.id === S.aanvraagSt[a.id].wb.id); return o && o.nr ? esc(o.nr) : 'verstuurd'; })()}</span>` : ''}<span class="sp"></span><button class="sm b2" style="color:var(--rd)" onclick="aanvraagWeg('${a.id}')">🗑 Verwijderen</button></div>`}</div>`).join('') || `<div class="c mu">Geen aanvragen${fl !== 'alle' ? ' met status "' + fl + '"' : ''}. Zodra VET Secretaris aanvragen in de cloud zet, verschijnen ze hier.</div>`}
+  <p class="mu" style="font-size:12px">Verwijderen en afhandelen gaat ook naar VET Secretaris (vanaf versie 2.1 van de app op de secretaris-gsm).</p>`;
+}
+function aanvraagStatus(id, st) {
+  (S.aanvraagSt[id] = S.aanvraagSt[id] || {}).st = st;
+  const a = EXT.aanvragen.find((x) => x.id === id); const u = S.aanvraagUit[id];
+  const doel = AANVR_KLAAR.includes(st) ? 'afgehandeld' : (u || (a && a.status === 'afgehandeld') ? 'volledig' : null);
+  if (doel && !(a && a.status === doel && !u)) S.aanvraagUit[id] = { status: doel, ok: false };
+  save(); R();
+}
+function aanvraagVerwijder(id) {
+  S.aanvraagWeg[id] = today(); delete S.aanvraagUit[id];
+  EXT.aanvragen = EXT.aanvragen.filter((a) => a.id !== id);
+  CLOUD.markDeleted('secretaris', 'aanvraag', id);
+}
+function aanvraagWeg(id) {
+  const a = EXT.aanvragen.find((x) => x.id === id);
+  if (!confirm('Aanvraag van ' + ((a && (a.naam || a.tel)) || 'onbekend') + ' verwijderen?\nDeze verdwijnt ook in VET Secretaris.')) return;
+  aanvraagVerwijder(id); save(); R(); toast('Aanvraag verwijderd');
+}
+function aanvragenOpruimen() {
+  const l = EXT.aanvragen.filter((a) => !S.aanvraagWeg[a.id] && AANVR_KLAAR.includes((S.aanvraagSt[a.id] || {}).st));
+  if (!l.length || !confirm(l.length + ' afgehandelde aanvra' + (l.length > 1 ? 'gen' : 'ag') + ' verwijderen?\nDeze verdwijnen ook in VET Secretaris.')) return;
+  l.forEach((a) => aanvraagVerwijder(a.id)); save(); R(); toast(l.length + ' verwijderd');
 }
 function aanvraagKlant(id) {
-  const a = EXT.aanvragen.find((x) => x.id === id); const m = String(a.adres || '').match(/^(.*?)[,\s]+(\d{4}\s+.+)$/);
-  let k = S.klanten.find((c) => c.tel && a.tel && c.tel.replace(/\D/g, '').slice(-9) === a.tel.replace(/\D/g, '').slice(-9));
-  if (!k) { k = { id: uid('c'), n: a.naam || a.tel, straat: m ? m[1] : (a.adres || ''), pc: m ? m[2] : '', adres: a.adres || '', tel: a.tel || '', mail: a.mail || '' }; S.klanten.push(k); }
+  const a = EXT.aanvragen.find((x) => x.id === id); const k = aanvraagKlantVan(a);
   (S.aanvraagSt[id] = S.aanvraagSt[id] || {}).st = 'offerte';
   nieuwDoc('offerte', { klant: klantSnapshot(k), opm: [S.cfg.opm.offerte, a.probleem ? 'Aanvraag: ' + a.probleem : ''].filter(Boolean).join('\n'), bron: { app: 'secretaris', id, label: 'aanvraag' } });
 }
@@ -243,6 +272,7 @@ function vInstellingen() {
     <p class="mu">Bronnen: ${esc(P.bronnen)}</p>${RO ? '' : `<button class="b2" onclick="S.cfg.regels={};save();location.reload()">Eigen aanpassingen wissen</button>`}</div>`; }
   if (t === 'cloud') body = `${window.CLOUDCARD ? CLOUDCARD() : ''}<div class="c"><h2>Back-up & export</h2><div class="row wrap"><button class="b2" onclick="exportJson()">Volledige back-up (JSON)</button><button class="b2" onclick="exportBoekhouder()">Export voor boekhouder (zip)</button>${RO ? '' : `<label class="b2" style="padding:9px 14px;border-radius:8px;background:var(--ac2);color:var(--ac);font-weight:600;cursor:pointer">Back-up terugzetten<input type="file" accept=".json" style="display:none" onchange="importJson(this.files[0])"></label>`}</div>
     <p class="mu">De export voor je boekhouder bevat alle facturen (PDF + UBL), aankoopfacturen met bijlagen en een overzicht (CSV) per kwartaal.</p></div>
+    ${window.vBackupCloud ? vBackupCloud() : ''}
     <div class="c"><h2>Thema</h2>${inp('Weergave', 'S.cfg.thema', { sel: [['', 'Automatisch'], ['light', 'Licht'], ['dark', 'Donker']], re: 1 })}</div>`;
   if (c.thema) document.documentElement.dataset.theme = c.thema; else delete document.documentElement.dataset.theme;
   return `<h1>Instellingen</h1><div class="chips">${tabs.map(([k, l]) => `<button class="chip ${t === k ? 'on' : ''}" onclick="go('instellingen',null,'${k}')">${l}</button>`).join('')}</div>${body}`;
@@ -260,11 +290,15 @@ function dexxterUit() { const j = String(JAAR()); [['factuur', 'dx1'], ['offerte
 function exportJson() { dl('vet-office-backup-' + today() + '.json', JSON.stringify(S), 'application/json'); }
 async function importJson(f) { if (!f || !confirm('Alles vervangen door deze back-up?')) return; const d = JSON.parse(await f.text()); S = Object.assign(S, d); await save(); location.reload(); }
 async function exportBoekhouder() {
-  const zip = new JSZip(); const j = +(prompt('Welk jaar?', String(JAAR())) || 0); if (!j) return; toast('Export maken…', 4000);
+  const j = +(prompt('Welk jaar?', String(JAAR())) || 0); if (!j) return; toast('Export maken…', 4000);
+  const zip = new JSZip(); await boekhoudingInZip(zip, j);
+  const blob = await zip.generateAsync({ type: 'blob' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `boekhouding-${S.cfg.bedrijf.naam.replace(/\W+/g, '-')}-${j}.zip`; a.click();
+}
+async function boekhoudingInZip(zip, j) {
   const rows = [['type', 'nummer', 'datum', 'klant', 'btw-nr', 'excl', 'btw', 'incl', 'status']];
   for (const d of S.docs.filter((x) => x.status !== 'concept' && x.type !== 'offerte' && String(x.datum).startsWith(String(j)))) {
     const t = C.totalen(d); rows.push([d.type, d.nr, d.datum, d.klant.naam, d.klant.btw || '', t.ex, t.btw, t.inc, status(d)]);
-    const q = 'Q' + C.kwartaal(d.datum).q; const pdf = await pdfVan(d); zip.file(`${j}/${q}/verkopen/${VET_PDF.naam(d)}`, pdf);
+    const q = 'Q' + C.kwartaal(d.datum).q; try { const pdf = await pdfVan(d); zip.file(`${j}/${q}/verkopen/${VET_PDF.naam(d)}`, pdf); } catch (e) { console.warn(e); }
     zip.file(`${j}/${q}/verkopen/${VET_PDF.naam(d).replace('.pdf', '.xml')}`, C.ubl(d, S.cfg, ''));
   }
   const rowsA = [['datum', 'leverancier', 'nummer', 'rooster', 'regime', 'excl', 'btw', 'aftrek%', 'betaald']];
@@ -276,6 +310,5 @@ async function exportBoekhouder() {
   const csv = (r) => r.map((x) => x.map((c) => '"' + String(c ?? '').replace(/"/g, '""') + '"').join(';')).join('\n');
   zip.file(`${j}/verkopen.csv`, csv(rows)); zip.file(`${j}/aankopen.csv`, csv(rowsA));
   for (let q = 1; q <= 4; q++) { const rb = C.roosters(S.docs, S.uitgaven || [], j, q, (S.aang[KW(j, q)] || {}).extra); zip.file(`${j}/Q${q}/btw-roosters.csv`, csv([['rooster', 'omschrijving', 'bedrag'], ...Object.entries(rb.g).map(([k, x]) => [k, RL.roosters[k], x])])); }
-  const blob = await zip.generateAsync({ type: 'blob' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `boekhouding-${S.cfg.bedrijf.naam.replace(/\W+/g, '-')}-${j}.zip`; a.click();
 }
 

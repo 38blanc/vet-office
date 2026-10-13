@@ -183,8 +183,13 @@
     async function rpc(name, body) { const r = await api('/rest/v1/rpc/' + name, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body || {}) }); const t = await r.text(); return t ? JSON.parse(t) : null; }
     async function rest(path) { return (await api('/rest/v1/' + path)).json(); }
     const file = (ref) => isRef(ref) ? fileData(ref.slice(3)) : Promise.resolve(ref);
+    // losse bestanden in de opslag (bv. maandelijkse back-up): pad relatief aan de eigen map
+    async function upload(rel, blob, type) { const s = await token(); const path = s.user.id + '/' + rel; await api('/storage/v1/object/' + BUCKET + '/' + path, { method: 'POST', headers: { 'Content-Type': type || 'application/octet-stream', 'x-upsert': 'true' }, body: blob }); return path; }
+    async function list(rel) { const s = await token(); const r = await api('/storage/v1/object/list/' + BUCKET, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prefix: s.user.id + '/' + rel, limit: 1000, sortBy: { column: 'name', order: 'desc' } }) }); return r.json(); }
+    async function remove(rels) { const s = await token(); if (!rels.length) return; await api('/storage/v1/object/' + BUCKET, { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prefixes: rels.map((x) => s.user.id + '/' + x) }) }); }
+    async function download(rel) { const s = await token(); return (await api('/storage/v1/object/authenticated/' + BUCKET + '/' + s.user.id + '/' + rel)).blob(); }
     function reset() { meta = { since: '1970-01-01T00:00:00Z', h: {}, f: {}, del: [] }; saveMeta(); }
-    return { login, logout, sync, soon, markDeleted, session, call, rpc, rest, file, reset, owner, get error() { return err; }, get last() { return last; }, get busy() { return busy; } };
+    return { login, logout, sync, soon, markDeleted, session, call, rpc, rest, file, reset, upload, list, remove, download, owner, get error() { return err; }, get last() { return last; }, get busy() { return busy; } };
   }
 
   root.VETSync = { create, hash, URL: URL_ };

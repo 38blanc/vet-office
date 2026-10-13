@@ -19,7 +19,9 @@ const CLOUD = VETSync.create({
     S.klanten.forEach((k) => out.push({ app: 'shared', kind: 'client', id: k.id, data: sharedVan(k) }));
     Object.entries(S.veka || {}).forEach(([id, x]) => out.push({ app: 'shared', kind: 'veka', id, data: x }));
     if (S.artikelsKlaar || (S.artikels || []).length) { S.artikelsKlaar = true; } if (S.artikelsKlaar) out.push({ app: 'shared', kind: 'articles', id: 'main', data: { list: (S.artikels || []).map(artikelShared) } });
-    out.push({ app: 'office', kind: 'settings', id: 'main', data: { cfg: S.cfg, seq: S.seq, artikels: S.artikels, aang: S.aang, bel: S.bel, aanvraagSt: S.aanvraagSt, bank: { rek: S.bank.rek, koppeling: S.bank.koppeling }, invest: S.invest, wagens: S.wagens, verz: S.verz, ic: S.ic, log: (S.log || []).slice(-300) } });
+    (S.werkUit || []).forEach((o) => out.push({ app: 'work', kind: 'order', id: o.id, data: o })); // nieuwe werkbonnen voor VET Work (nummer geeft Work)
+    Object.entries(S.aanvraagUit || {}).forEach(([id, u]) => { const a = EXT.aanvragen.find((x) => x.id === id); if (a && !u.ok && !S.aanvraagWeg[id]) { const d = Object.assign({}, a, { status: u.status, statusDoor: 'office' }); delete d.id; out.push({ app: 'secretaris', kind: 'aanvraag', id, data: d }); } });
+    out.push({ app: 'office', kind: 'settings', id: 'main', data: { cfg: S.cfg, seq: S.seq, artikels: S.artikels, aang: S.aang, bel: S.bel, aanvraagSt: S.aanvraagSt, aanvraagWeg: S.aanvraagWeg, onderhoudMail: S.onderhoudMail, bank: { rek: S.bank.rek, koppeling: S.bank.koppeling }, invest: S.invest, wagens: S.wagens, verz: S.verz, ic: S.ic, log: (S.log || []).slice(-300) } });
     return out;
   },
   async apply(rows) {
@@ -31,7 +33,7 @@ const CLOUD = VETSync.create({
         else if (r.kind === 'banktx') { S.bank.tx = S.bank.tx || []; const i = S.bank.tx.findIndex((x) => x.id === r.id); if (del) { if (i > -1) S.bank.tx.splice(i, 1); } else if (i > -1) S.bank.tx[i] = d; else S.bank.tx.push(d); }
         else if (r.kind === 'klantx') { if (del) delete S.klantx[r.id]; else S.klantx[r.id] = d; }
         else if (r.kind === 'settings' && !del) {
-          if (d.cfg) S.cfg = Object.assign(nieuweCfg(), d.cfg); ['seq', 'aang', 'bel', 'aanvraagSt', 'invest', 'wagens', 'verz', 'ic'].forEach((k) => { if (d[k]) S[k] = d[k]; }); if (d.artikels && !S.artikelsKlaar && !(S.artikels || []).length) S.artikels = d.artikels;
+          if (d.cfg) S.cfg = Object.assign(nieuweCfg(), d.cfg); ['seq', 'aang', 'bel', 'aanvraagSt', 'aanvraagWeg', 'onderhoudMail', 'invest', 'wagens', 'verz', 'ic'].forEach((k) => { if (d[k]) S[k] = d[k]; }); if (d.aanvraagWeg) EXT.aanvragen = EXT.aanvragen.filter((a) => !S.aanvraagWeg[a.id]); if (d.artikels && !S.artikelsKlaar && !(S.artikels || []).length) S.artikels = d.artikels;
           if (d.bank) { S.bank.rek = d.bank.rek || S.bank.rek; S.bank.koppeling = d.bank.koppeling || null; } if (d.log) S.log = d.log; regelsToepassen();
         }
       } else if (r.app === 'shared' && r.kind === 'veka') { if (del) delete S.veka[r.id]; else S.veka[r.id] = d;
@@ -48,7 +50,12 @@ const CLOUD = VETSync.create({
         if (del) { if (i > -1) EXT.jobs.splice(i, 1); } else { const j = Object.assign({}, d, { sig: '', fotos: [], tickP1: [], tickP2: [], foto: '' }); if (i > -1) EXT.jobs[i] = j; else EXT.jobs.push(j); }
       } else if (r.app === 'secretaris' && r.kind === 'aanvraag') {
         const i = EXT.aanvragen.findIndex((a) => a.id === r.id);
-        if (del) { if (i > -1) EXT.aanvragen.splice(i, 1); } else { const a = Object.assign({ id: r.id }, d); if (i > -1) EXT.aanvragen[i] = a; else EXT.aanvragen.push(a); }
+        if (del || S.aanvraagWeg[r.id]) { if (i > -1) EXT.aanvragen.splice(i, 1); } else {
+          const a = Object.assign({ id: r.id }, d); if (i > -1) EXT.aanvragen[i] = a; else EXT.aanvragen.push(a);
+          const u = (S.aanvraagUit || {})[r.id]; if (u && d.status === u.status) u.ok = true; // Secretaris heeft de status van Office
+          const st = (S.aanvraagSt[r.id] || {}).st || 'nieuw';
+          if (d.status === 'afgehandeld' && d.statusDoor !== 'office' && !AANVR_KLAAR.includes(st)) (S.aanvraagSt[r.id] = S.aanvraagSt[r.id] || {}).st = 'afgehandeld'; // afgehandeld op de secretaris-gsm
+        }
       }
     }
     await save(true);
@@ -56,6 +63,7 @@ const CLOUD = VETSync.create({
     const typing = ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement && document.activeElement.tagName);
     if (!typing && !document.querySelector('.mod')) R(); else sideR();
   },
+  onPushed(rows) { let x = 0; if ((S.werkUit || []).length) { const n = S.werkUit.length; S.werkUit = S.werkUit.filter((o) => !rows.some((r) => r.app === 'work' && r.id === o.id)); if (S.werkUit.length !== n) x = 1; } rows.forEach((r) => { const u = r.app === 'secretaris' && (S.aanvraagUit || {})[r.id]; if (u && r.data && r.data.status === u.status) { u.ok = true; x = 1; } }); if (x) save(true); },
   onStatus(st) { CS = st; const e = document.getElementById('cloudst'); if (e) e.innerHTML = CLOUDST(); const e2 = document.getElementById('cloudst2'); if (e2) e2.innerHTML = CLOUDST(); const c = document.getElementById('cloudcard'); if (c && CLOUD.session()) c.outerHTML = CLOUDCARD(); }
 });
 
@@ -188,7 +196,7 @@ async function boekhouderIntrekken(m) { if (!confirm('Toegang intrekken?')) retu
 async function boekhouderCheck() { await toegangLaden(); const s = CLOUD.session(); if (Array.isArray(TOEGANG) && TOEGANG.some((x) => x.member === s.user.id) && !S.docs.length) go('instellingen', null, 'boekhouder'); }
 async function boekhouderOpen(owner) {
   await save(); RO = true; EIGENAAR = owner; CLOUD.reset();
-  S = { docs: [], klanten: [], klantx: {}, uitgaven: [], bank: { tx: [], rek: [], koppeling: null }, bel: {}, aang: {}, aanvraagSt: {}, seq: { factuur: {}, offerte: {}, creditnota: {} }, artikels: [], cfg: nieuweCfg(), peppolIn: [], log: [] };
+  S = { docs: [], klanten: [], klantx: {}, uitgaven: [], bank: { tx: [], rek: [], koppeling: null }, bel: {}, aang: {}, aanvraagSt: {}, aanvraagWeg: {}, aanvraagUit: {}, onderhoudMail: {}, werkUit: [], seq: { factuur: {}, offerte: {}, creditnota: {} }, artikels: [], cfg: nieuweCfg(), peppolIn: [], log: [] };
   EXT.jobs = []; EXT.orders = []; EXT.aanvragen = [];
   go('home'); await CLOUD.sync(); R();
 }

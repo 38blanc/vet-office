@@ -42,6 +42,15 @@ Webapp (Mac, Windows, iPhone, Android) en desktop-app (.dmg / .exe).
 - **Te factureren**: werkbon (VET Work) + attesten (VET Heat) samen → 1 factuur met werkbon en attesten als bijlage (mail en Peppol).
 - **Artikels** gedeeld met VET Work.
 
+## 3c. Nieuw in versie 3
+- **Aanvraag → werkbon**: bij een aanvraag van VET Secretaris maakt "🔧 Werkbon in VET Work" meteen een werkbon met klant, adres, toestel en probleem (Work geeft het nummer). Nieuwe klanten worden automatisch aangemaakt.
+- **Betalingsherinneringen**: bij een vervallen factuur staat de knop "⏰ Herinnering" en daarna "⏰ Aanmaning".
+  - Particulier: de eerste herinnering is gratis, met 14 dagen termijn (per post + 3 werkdagen). Daarna komen het schadebeding (€ 20 / € 30 + 10% / € 65 + 5%, max. € 2.000) en interest, zoals in je algemene voorwaarden en binnen het wettelijke maximum (Boek XIX WER).
+  - Bedrijf: van rechtswege interest vanaf de vervaldag + forfait € 40 (wet 2 augustus 2002).
+  - Rentevoet: 10,5% (1e semester 2026). Controleer elk semester via FOD Financiën en pas zo nodig `RL.herinnering` aan in `office-v3.js`.
+- **Onderhoudsherinnering**: Attesten › Onderhoud binnenkort toont klanten van wie het volgende onderhoud binnen 60 dagen valt. Stuur ze in één klik een mail (tekst aanpasbaar). Het overzicht toont hoeveel klanten nog geen herinnering kregen.
+- **Automatische back-up**: elke maand een zip in je cloudopslag met de volledige administratie, alle facturen (PDF + UBL), aankopen en btw-roosters. Bewaard worden de laatste 12 maanden + per jaar de laatste. Downloaden kan via Instellingen › Cloud & back-up.
+
 ## 4. Peppol (wanneer je Dexxter loslaat)
 Je Peppol-ID (0208:1034973271) kan maar bij één toegangspunt tegelijk staan. Zolang Dexxter je facturen verstuurt, laat je het daar.
 1. Account op **recommand.eu** (gratis tot 25 documenten/maand) › bedrijf toevoegen › Peppol-registratie verhuizen van Dexxter (migratiesleutel).
@@ -86,9 +95,12 @@ De desktop-app opent altijd de nieuwste webversie en werkt ook offline.
 - Kleine wijzigingen (gemeentebelasting, beheerskosten, vermeerdering…) kan je in **Instellingen › Regels** aanpassen zonder update.
 - Nieuw jaar: kopieer het blok `2026` in `rules.js` naar `2027` en pas de bedragen aan.
 
-## 9. VET Secretaris (later)
-VET Office leest aanvragen uit de cloud-tabel `docs` met `app = 'secretaris'`, `kind = 'aanvraag'` en `data`:
-`{ naam, tel, mail, adres, toestel, probleem, bron: 'oproep'|'sms'|'whatsapp'|'web', ontvangen: ISO-datum }`.
+## 9. VET Secretaris
+VET Office leest aanvragen uit de cloud-tabel `docs` met `app = 'secretaris'`, `kind = 'aanvraag'`.
+Office is het admin-programma:
+- **Verwijderen** (per aanvraag of "Verwijder alle afgehandelde") zet `deleted = true`. Office onthoudt dat zelf, dus de aanvraag komt nooit terug in Office.
+- **Afhandelen**: de status klant, afgehandeld of afgewezen zet `data.status = "afgehandeld"` en `data.statusDoor = "office"`.
+- De secretaris-gsm neemt dit over vanaf **VET Secretaris 2.1**, de versie die ook uit de cloud ophaalt.
 
 ## Bestanden
 `index.html` (scherm) · `office-app.js` (documenten, klanten) · `office-views.js` (overige schermen) · `office-core.js` (berekeningen, XML, UBL) · `office-pdf.js` (PDF-opmaak) · `office-cloud.js` (cloud, Peppol, bank, boekhouder) · `rules.js` (wetgeving) · `vet-sync.js` (gedeeld met Heat/Work) · `desktop-*` (Mac/Windows) · `office-extra.js` (versie 2: kosten, belastingen, rapporten, tijdlijn, VEKA, dossiers) · `office-start.js` · `pdfjs*.js` (PDF-voorbeelden) · `supabase-*` (edge functions en SQL, ter info – staan al online)

@@ -45,7 +45,7 @@ const nieuweCfg = () => ({
   btwProvisieOgm: '', regels: {}, thema: '', afschrijving: 3
 });
 let S = {
-  docs: [], klanten: [], klantx: {}, uitgaven: [], bank: { tx: [], rek: [], koppeling: null }, bel: {}, aang: {}, aanvraagSt: {},
+  docs: [], klanten: [], klantx: {}, uitgaven: [], bank: { tx: [], rek: [], koppeling: null }, bel: {}, aang: {}, aanvraagSt: {}, aanvraagWeg: {}, aanvraagUit: {}, onderhoudMail: {}, werkUit: [],
   seq: { factuur: {}, offerte: {}, creditnota: {} }, artikels: [], cfg: nieuweCfg(), peppolIn: [], log: []
 };
 const EXT = { jobs: [], orders: [], aanvragen: [], workArt: [] }; // gegevens uit VET Heat, VET Work en VET Secretaris (alleen lezen)
@@ -91,13 +91,13 @@ const nav = [
   'Aankoop', ['uitgaven', '💸', 'Kosten'], ['peppol', '📥', 'Peppol-inbox'], ['invest', '🛠', 'Afschrijvingen'], ['wagens', '🚐', "Auto's"], ['bank', '🏦', 'Bank'],
   'Aangiftes', ['btw', '📊', 'Btw-aangifte'], ['ic', '🇪🇺', 'IC-aangifte'], ['belasting', '🧮', 'Personenbelasting & RSZ'], ['rapport', '📈', 'Rapporten'],
   'VET-apps', ['veka', '📨', 'VEKA-meldingen'], ['attesten', '🔥', 'Attesten'], ['aanvragen', '📞', 'Aanvragen'],
-  null, ['verz', '🛡', 'Verzekeringen'], ['instellingen', '⚙️', 'Instellingen']
+  'Beheer', ['verz', '🛡', 'Verzekeringen'], ['instellingen', '⚙️', 'Instellingen']
 ];
 function telling(k) {
   if (k === 'werkbonnen') return teFactureren().length + losseAttesten().length;
   if (k === 'veka') return EXT.jobs.filter(vekaNodig).length;
   if (k === 'peppol') return (S.peppolIn || []).filter((p) => !p.verwerkt).length;
-  if (k === 'aanvragen') return EXT.aanvragen.filter((a) => !(S.aanvraagSt[a.id] || {}).st).length;
+  if (k === 'aanvragen') return EXT.aanvragen.filter((a) => !(S.aanvraagSt[a.id] || {}).st && !(S.aanvraagWeg || {})[a.id]).length;
   if (k === 'facturen') return S.docs.filter((d) => isFactuur(d) && status(d) === 'vervallen').length;
   return 0;
 }
@@ -229,6 +229,7 @@ function vDoc() {
     akties.push(`<button class="b2" onclick="toonPdf()">PDF bekijken</button>`);
     if (d.status !== 'concept') akties.push(`<button class="b2" onclick="verstuur()">Versturen…</button>`);
     if (isFactuur(d) && d.status !== 'concept' && !afgehandeld(d)) akties.push(`<button class="gr" onclick="betaling()">Betaling registreren</button>`);
+    if (window.herinnerKan && herinnerKan(d)) akties.push(`<button class="b2" onclick="herinnering()">⏰ ${(d.herinneringen || []).length ? 'Aanmaning' : 'Herinnering'}</button>`);
     if (d.type === 'offerte' && d.status !== 'concept') akties.push(`<button class="b2" onclick="offerteNaar('factuur')">→ Factuur</button><button class="b2" onclick="offerteNaar('voorschot')">→ Voorschotfactuur</button><select style="width:auto;margin:0" onchange="set('D.status',this.value);R()">${['verzonden', 'aanvaard', 'geweigerd', 'gefactureerd'].map((s) => `<option ${d.status === s ? 'selected' : ''}>${s}</option>`).join('')}</select>`);
     if (isFactuur(d) && d.status !== 'concept') akties.push(`<button class="b2" onclick="maakCreditnota('${d.id}')">Creditnota</button>`);
     if (d.type === 'factuur' && d.status === 'concept') akties.push(`<button class="b2" onclick="voorschotVerrekenen()">Voorschot verrekenen</button>`);
@@ -263,6 +264,7 @@ function vDoc() {
     ${verm.length ? `<div class="mu">Wordt automatisch toegevoegd (wettelijke vermeldingen):<ul style="margin:4px 0 0 18px;padding:0">${verm.map((x) => `<li>${esc(x.slice(0, 140))}${x.length > 140 ? '…' : ''}</li>`).join('')}</ul></div>` : ''}
   </div>
   ${isFactuur(d) && (d.betalingen || []).length ? `<div class="c"><h2>Betalingen</h2>${d.betalingen.map((b, i) => `<div class="dl"><span>${dt(b.datum)} · ${esc(b.via || 'overschrijving')}</span><span class="row"><b class="tab">${eur(b.bedrag)}</b>${RO ? '' : `<button class="lnk" onclick="betalingWeg(${i})">✕</button>`}</span></div>`).join('')}<div class="dl"><span>Nog open</span><b>${eur(t.open)}</b></div></div>` : ''}
+  ${window.vHerHist ? vHerHist(d) : ''}
   ${d.peppol ? `<div class="c"><h2>Peppol</h2><div class="dl"><span>Status</span><b>${esc(d.peppol.status || '')}</b></div><div class="dl"><span>Verzonden</span><span>${esc((d.peppol.datum || '').replace('T', ' ').slice(0, 16))}</span></div><div class="dl"><span>Ontvanger</span><span>${esc(d.peppol.naar || '')}</span></div></div>` : ''}
   <div class="c"><h2>Bijlagen (gaan mee met de factuur)</h2>${(d.bijlagen || []).map((b, i) => `<div class="dl"><span>${b.soort === 'werkbon' ? '🔧' : b.soort === 'attest' ? '🔥' : '📎'} ${esc(b.naam)}</span><span class="row"><button class="lnk sm" onclick="bestandOpen(curDoc().bijlagen[${i}].ref)">Openen</button>${RO ? '' : `<button class="lnk sm" onclick="curDoc().bijlagen.splice(${i},1);save();R()">✕</button>`}</span></div>`).join('') || '<p class="mu">Geen bijlagen.</p>'}${RO ? '' : `<label class="btnl b2l" style="margin-top:6px">+ Bijlage (PDF)<input type="file" accept="application/pdf,image/*" style="display:none" onchange="bijlageDoc(this.files[0])"></label>`}</div>
   ${d.archief ? `<div class="c"><h2>Archief (10 jaar bewaren)</h2><div class="row wrap"><button class="b2 sm" onclick="archiefOpen('pdf')">Origineel PDF</button><button class="b2 sm" onclick="archiefOpen('ubl')">UBL (Peppol-XML)</button><span class="mu">vastgelegd op ${esc(String(d.archief.datum || '').slice(0, 10))}</span></div></div>` : ''}
