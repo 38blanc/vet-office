@@ -20,6 +20,10 @@
     await laadFonts();
     const { jsPDF } = root.jspdf;
     const pdf = new jsPDF({ unit: 'pt', format: 'a4', compress: true });
+    // onzichtbare tekens (bv. bij een gsm-nummer gekopieerd uit Contacten: +32 …) weglaten
+    const INV = /[\u200B-\u200F\u202A-\u202E\u2060-\u206F\uFEFF]/g, schoon = (x) => typeof x === 'string' ? x.replace(INV, '') : Array.isArray(x) ? x.map(schoon) : x;
+    const _text = pdf.text.bind(pdf), _split = pdf.splitTextToSize.bind(pdf);
+    pdf.text = (t, ...a) => _text(schoon(t), ...a); pdf.splitTextToSize = (t, ...a) => _split(schoon(t), ...a);
     pdf.addFileToVFS('PTSans-Regular.ttf', root.VET_FONTS.regular); pdf.addFont('PTSans-Regular.ttf', 'PT', 'normal');
     pdf.addFileToVFS('PTSans-Bold.ttf', root.VET_FONTS.bold); pdf.addFont('PTSans-Bold.ttf', 'PT', 'bold');
     const W = 595.28, H = 841.89, L = 35.8, RE = W - 35.8;
