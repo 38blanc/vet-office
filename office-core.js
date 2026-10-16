@@ -66,7 +66,7 @@
   C.roosters = (docs, uitgaven, j, q, extra = {}) => {
     const g = {}; const add = (k, v) => { g[k] = r2((g[k] || 0) + v); };
     const details = { verkopen: [], aankopen: [] };
-    docs.filter((d) => d.status !== 'concept' && d.status !== 'geannuleerd' && (d.type === 'factuur' || d.type === 'voorschot' || d.type === 'creditnota') && C.inKwartaal(d.datum, j, q)).forEach((d) => {
+    docs.filter((d) => d.status !== 'concept' && d.status !== 'geannuleerd' && (d.type === 'factuur' || d.type === 'voorschot' || d.type === 'creditnota') && C.inKwartaal(d.btwDatum || d.datum, j, q)).forEach((d) => {
       const t = C.totalen(d); details.verkopen.push(d);
       t.groepen.forEach((gr) => {
         const code = R.btwCodes[gr.code] || R.btwCodes['21'];
@@ -86,11 +86,15 @@
       details.aankopen.push(u);
       const cat = u.cat || '82';
       const aftrek = (u.aftrek == null ? 100 : C.num(u.aftrek)) / 100;
+      const beroep = (u.beroep == null || u.beroep === '' ? 100 : C.num(u.beroep)) / 100;
       const regime = u.regime || 'normaal';
       (u.tarieven || []).forEach((t) => {
         const basis = C.num(t.basis); const btw = regime === 'normaal' ? C.num(t.btw) : r2(basis * C.num(t.pct) / 100);
-        if (u.creditnota) { add('85', basis); if (regime === 'normaal') add('63', r2(btw * aftrek)); return; }
-        add(cat, r2(basis + btw * (1 - aftrek)));
+        // zoals Dexxter: enkel het beroepsdeel; niet-aftrekbare btw van het beroepsdeel hoort bij de maatstaf
+        const maat = r2(basis * beroep + (regime === 'normaal' ? btw * Math.max(0, beroep - aftrek) : 0));
+        // ontvangen creditnota: rooster 85 + btw terug in 63, en het oorspronkelijke rooster (81/82/83) verminderen
+        if (u.creditnota) { add('85', basis); add(cat, -maat); if (regime === 'normaal') add('63', r2(btw * aftrek)); return; }
+        add(cat, maat);
         if (regime === 'verlegd') { add('87', basis); add('56', btw); add('59', r2(btw * aftrek)); }
         else if (regime === 'icdienst') { add('88', basis); add('55', btw); add('59', r2(btw * aftrek)); }
         else if (regime === 'icgoed') { add('86', basis); add('55', btw); add('59', r2(btw * aftrek)); }

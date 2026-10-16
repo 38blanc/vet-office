@@ -13,7 +13,7 @@ const DX_LED = {
 };
 const DX_TPL = { Handelsgoederen: 'handelsgoederen-verbruiksmaterialen', Onderaannemingen: 'onderaannemingen', Investeringen: 'investering', SocialeBijdragen: 'sociale-bijdragen-kwartaalbijdragen', Verzekeringen: 'verzekeringen-overig', KostenSoftware: 'kosten-software-informatica', Opstartkosten: 'opstartkosten', PubliciteitMarketing: 'marketing-reclame-allerlei', AlgemeneKosten: 'kleine-aankopen-allerlei-schrijfgerief-p' };
 const dxNorm = (s) => String(s || '').toLowerCase().replace(/\s+/g, ' ').trim();
-const dxEenheid = (u) => { const x = dxNorm(u); return x.startsWith('uur') ? 'uren' : x.startsWith('km') || x.startsWith('kilometer') ? 'km' : 'stuks'; };
+const dxEenheid = (u) => { const x = dxNorm(u); return x.startsWith('u') ? 'uren' : x.startsWith('km') || x.startsWith('kilometer') ? 'km' : 'stuks'; };
 const dxArtEenheid = (u) => { const x = dxEenheid(u); return x === 'uren' ? 'uur' : x === 'km' ? 'km' : 'stuk'; };
 const dxBtwNr = (nr) => (nr ? 'BE' + String(nr).replace(/\D/g, '').padStart(10, '0') : '');
 
@@ -67,7 +67,7 @@ function dexxterImport(x) {
       return { id: uid('l'), oms: i.n || '', det: i.det ?? artDet[dxNorm(i.n)] ?? '', aantal: i.q ?? 1, eenheid: dxEenheid(i.u), prijs: i.p ?? 0, btw: o.verl ? 'VERL' : String(i.btw ?? 21), korting };
     });
     const d = {
-      id: 'dx' + o.id, type, nr: o.nr || '', datum: o.d, verval: o.due || o.d, klant: snap, lijnen, opm: o.opm || '', klantRef: o.ref || '',
+      id: 'dx' + o.id, type, nr: o.nr || '', datum: o.dd || o.d, btwDatum: o.dd && o.d && o.dd !== o.d ? o.d : undefined, verval: o.due || o.d, klant: snap, lijnen, opm: o.opm || '', klantRef: o.ref || '',
       korting: o.disc ? (o.discP ? o.disc : 0) : 0, ogm: o.ogm || '', betalingen: [], bron: { app: 'dexxter', id: o.id, label: 'Dexxter' }, aangemaakt: o.d
     };
     if (o.disc && !o.discP) { const t = C.totalen(Object.assign({}, d, { korting: 0 })); d.korting = t.ex ? C.r2(o.disc / t.ex * 100) : 0; }
@@ -104,12 +104,12 @@ function dexxterImport(x) {
     (e.b || [{}]).forEach((b, i) => {
       const id = 'dx' + e.id + (i ? '-' + i : '');
       const kc = DX_LED[b.led] || DX_TPL[b.ledT] || 'overige-diensten'; const c = cats.find((y) => y.id === kc) || cats[0];
-      const ex = C.r2(b.ex || 0), inc = C.r2(b.inc ?? ex), pct = b.btw != null ? b.btw : ex ? Math.round((inc - ex) / ex * 100) : 0;
       const eu = /EU/.test(e.levType || '') && !/OUTSIDE/.test(e.levType || '');
       const regime = (b.verl || b.med) ? (eu ? 'icdienst' : 'verlegd') : 'normaal';
+      const ex = C.r2(b.ex || 0), inc = C.r2(b.inc ?? ex), pct = b.btw != null ? b.btw : regime !== 'normaal' ? 21 : ex ? Math.round((inc - ex) / ex * 100) : 0;
       const btw = regime === 'normaal' ? C.r2(inc - ex) : C.r2(ex * pct / 100);
       const u = {
-        id, datum: e.d, leverancier: e.lev || '', nr: e.nr || '', oms: e.omschr || (b.ledN || ''), kc: c.id, cat: c.rooster, regime,
+        id, datum: e.d, factuurDatum: e.dd || e.d, leverancier: e.lev || '', nr: e.nr || '', oms: e.omschr || (b.ledN || ''), kc: c.id, cat: c.rooster, regime,
         tarieven: [{ pct, basis: Math.abs(ex), btw: Math.abs(btw) }], aftrek: b.aftrek ?? c.btw, beroep: b.beroep ?? c.beroep,
         betaald: !!e.paid, creditnota: !!e.cn, bron: { app: 'dexxter', id: e.id }, dxBestand: e.file || '', peppol: e.via === 'PEPPOL'
       };
