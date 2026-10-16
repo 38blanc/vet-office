@@ -241,7 +241,7 @@ function vInstellingen() {
   if (t === 'dexxter') body = `<div class="c"><h2>Samenwerking met Dexxter</h2>
     <label class="row" style="gap:10px;font-size:16px;margin-bottom:8px"><input type="checkbox" style="width:22px;height:22px;margin:0" ${c.dexxter ? 'checked' : ''} ${RO ? 'disabled' : ''} onchange="dexxterSchakel(this.checked)"> <b>Ik werk nog met Dexxter</b></label>
     <p class="mu">Aan: Dexxter blijft je officiële facturatie en Peppol. In VET Office vul je het nummer uit Dexxter in, PDF's krijgen "KOPIE" en Peppol staat uit. Zo kan je de btw-aangifte en belastingraming naast elkaar vergelijken.</p>
-    <p class="mu">Uit: VET Office wordt je officiële facturatie. Je nummering loopt verder vanaf je laatste Dexxter-nummer (wettelijk verplicht: één doorlopende reeks).</p></div>`;
+    <p class="mu">Uit: VET Office wordt je officiële facturatie. Je nummering loopt verder vanaf je laatste Dexxter-nummer (wettelijk verplicht: één doorlopende reeks).</p></div>${window.vDexxterImport ? vDexxterImport() : ''}`;
   if (t === 'docs') body = `<div class="c"><h2>Nummering</h2><div class="cols3">${inp('Facturen', 'S.cfg.nummer.factuur')}${inp('Offertes', 'S.cfg.nummer.offerte')}${inp("Creditnota's", 'S.cfg.nummer.creditnota')}</div>
     <p class="mu">{J} = jaar, {N} = volgnummer. Volgende nummers: ${['factuur', 'offerte', 'creditnota'].map((r) => `${r} <b>${esc(volgNr(r).nr)}</b>`).join(' · ')}</p>
     ${RO ? '' : `<div class="cols3">${['factuur', 'offerte', 'creditnota'].map((r) => `<label class="f"><span>Laatst gebruikt nr ${r} ${JAAR()}</span><input inputmode="numeric" value="${esc((S.seq[r] || {})[JAAR()] || 0)}" onchange="(S.seq['${r}']=S.seq['${r}']||{})[JAAR()]=C.num(this.value);save();R()"></label>`).join('')}</div>`}</div>
