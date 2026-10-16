@@ -75,9 +75,9 @@ function CLOUDST() {
 function CLOUDCARD() {
   const s = CLOUD.session();
   if (!s) return `<div class="c" id="cloudcard"><h2>Cloud (VET Office + Heat + Work)</h2><p class="mu">Log in met hetzelfde account als in VET Heat en VET Work. Dan komen werkbonnen, attesten en klanten hier automatisch binnen.</p>
-  <label class="f"><span>E-mail</span><input id="ce" type="email" autocomplete="username"></label><label class="f"><span>Wachtwoord</span><input id="cp" type="password" autocomplete="current-password" onkeydown="if(event.key==='Enter')cloudLogin(this.parentElement.nextElementSibling)"></label><button onclick="cloudLogin(this)">Inloggen</button>${CS.error ? `<p class="mu" style="color:var(--rd)">${esc(CS.error)}</p>` : ''}</div>`;
+  <label class="f"><span>E-mail</span><input id="ce" type="email" autocomplete="username"></label><label class="f"><span>Wachtwoord</span><input id="cp" type="password" autocomplete="current-password" onkeydown="if(event.key==='Enter')cloudLogin(this.parentElement.nextElementSibling)"></label><button onclick="cloudLogin(this)">Inloggen</button>${CS.error ? `<p class="mu" style="color:var(--rd)">${esc(CS.error)}</p>` : ''}${window.VERSIEKAART ? VERSIEKAART() : ''}</div>`;
   return `<div class="c" id="cloudcard"><h2>Cloud</h2><p style="margin:0 0 6px">Ingelogd als <b>${esc(s.user.email)}</b></p><p class="mu" style="margin:0 0 10px">${{ ok: '✓ Alles gesynchroniseerd om ' + hm2(CS.last), bezig: 'Bezig…', offline: 'Geen internet: wordt later verstuurd.', fout: 'Fout: ' + esc(CS.error || '') }[CS.state] || ''}</p>
-  <div class="row wrap"><button class="b2" onclick="CLOUD.sync()">Nu synchroniseren</button><button class="b2" onclick="if(confirm('Uitloggen op dit toestel?')){CLOUD.logout();R()}">Uitloggen</button></div></div>`;
+  <div class="row wrap"><button class="b2" onclick="CLOUD.sync()">Nu synchroniseren</button><button class="b2" onclick="if(confirm('Uitloggen op dit toestel?')){CLOUD.logout();R()}">Uitloggen</button></div>${window.VERSIEKAART ? VERSIEKAART() : ''}</div>`;
 }
 async function cloudLogin(btn) {
   const e = $('#ce').value, p = $('#cp').value; if (!e || !p) return;
