@@ -50,16 +50,42 @@ function dashboardBoven() {
   S.docs.filter((d) => d.status !== 'concept' && d.status !== 'geannuleerd' && ['factuur', 'voorschot', 'creditnota'].includes(d.type) && jaarVan(d.datum) === j).forEach((d) => { m[+d.datum.slice(5, 7) - 1].in += (d.type === 'creditnota' ? -1 : 1) * C.totalen(d).ex; });
   (S.dagontv || []).filter((x) => jaarVan(x.datum) === j).forEach((x) => { m[+x.datum.slice(5, 7) - 1].in += C.num(x.ex); });
   (S.uitgaven || []).filter((u) => !u.privé && jaarVan(u.datum) === j).forEach((u) => { const k = kostVan(u, j); if (k.c.soort !== 'invest') m[+u.datum.slice(5, 7) - 1].uit += k.kost; });
-  const max = Math.max(1, ...m.map((x) => Math.max(x.in, x.uit)));
+  window._gData = { d: m, mn: ['januari', 'februari', 'maart', 'april', 'mei', 'juni', 'juli', 'augustus', 'september', 'oktober', 'november', 'december'], j };
   const mn = ['jan', 'feb', 'mrt', 'apr', 'mei', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'dec'];
   const html = `<div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))">
     ${[['Resultaat', w.winst, "go('rapport',null,'resultaat')"], ['Inkomsten', w.omzet, "go('facturen')"], ['Uitgaven', uit, "go('uitgaven')"], ['Te ontvangen van klanten', teOntv, "filt.st='';go('facturen')"], ['Te betalen aan leveranciers', teBet, "go('uitgaven')"]]
       .map(([t, x, k]) => `<div class="c kpi" style="cursor:pointer" onclick="${k}"><h2>${t}</h2><div class="v">${eur(x)}</div></div>`).join('')}</div>
-  <div class="c"><h2>${j} in kleur</h2><div style="display:flex;align-items:flex-end;gap:6px;height:170px;padding-top:6px">${m.map((x, i) => `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;height:100%;justify-content:flex-end" title="${mn[i]}: inkomsten ${eur(x.in)} · uitgaven ${eur(x.uit)}">
-      <div style="display:flex;gap:2px;align-items:flex-end;height:140px;width:100%;justify-content:center"><div style="width:42%;background:#7dd3e8;border-radius:3px 3px 0 0;height:${Math.max(0, x.uit) / max * 100}%"></div><div style="width:42%;background:#f5d76e;border-radius:3px 3px 0 0;height:${Math.max(0, x.in) / max * 100}%"></div></div>
-      <span class="mu" style="font-size:11px">${mn[i]}</span></div>`).join('')}</div>
-    <div class="row" style="gap:14px;justify-content:center;font-size:12px;margin-top:6px"><span><span style="display:inline-block;width:10px;height:10px;background:#7dd3e8;border-radius:2px"></span> Uitgaven</span><span><span style="display:inline-block;width:10px;height:10px;background:#f5d76e;border-radius:2px"></span> Inkomsten</span></div></div>`;
+  <div class="c"><h2>${j} in kleur</h2>${grafiek(m, mn)}</div>`;
   const h1 = $('#app h1'); if (h1) h1.insertAdjacentHTML('afterend', html);
+}
+
+/* grafiek inkomsten/uitgaven per maand: bedragen bij aanwijzen (muis) of aantikken (gsm) */
+function grafiek(m, mn) {
+  const max0 = Math.max(1, ...m.map((x) => Math.max(x.in, x.uit)));
+  const stap = [10, 20, 25, 50, 100, 200, 250, 500, 1000, 2000, 2500, 5000, 10000, 20000, 25000, 50000].find((s) => max0 / s <= 4) || Math.ceil(max0 / 4);
+  const max = Math.ceil(max0 / stap) * stap; const lijnen = []; for (let x = 0; x <= max; x += stap) lijnen.push(x);
+  const kort = (x) => x >= 1000 ? '€ ' + (x / 1000).toLocaleString('nl-BE', { maximumFractionDigits: 1 }) + 'k' : '€ ' + x;
+  const H = 180;
+  return `<div style="display:flex;gap:6px;margin-top:6px">
+    <div style="position:relative;width:44px;height:${H}px;flex-shrink:0">${lijnen.map((x) => `<span class="mu" style="position:absolute;right:4px;bottom:${x / max * H - 7}px;font-size:11px">${kort(x)}</span>`).join('')}</div>
+    <div style="position:relative;flex:1;height:${H}px">
+      ${lijnen.map((x) => `<div style="position:absolute;left:0;right:0;bottom:${x / max * H}px;border-top:1px ${x ? 'dashed' : 'solid'} var(--bd)"></div>`).join('')}
+      <div style="position:absolute;inset:0;display:flex;align-items:flex-end;gap:6px">${m.map((x, i) => `<div class="gmaand" data-i="${i}" style="flex:1;height:100%;display:flex;gap:2px;align-items:flex-end;justify-content:center;cursor:pointer;border-radius:4px" onmouseenter="gTip(this,1)" onmouseleave="gTip(this,0)" onclick="gTip(this,2)">
+        <div style="width:40%;background:#7dd3e8;border-radius:3px 3px 0 0;height:${Math.max(0, x.uit) / max * 100}%;${x.uit > 0 ? 'min-height:2px' : ''}"></div><div style="width:40%;background:#f5d76e;border-radius:3px 3px 0 0;height:${Math.max(0, x.in) / max * 100}%;${x.in > 0 ? 'min-height:2px' : ''}"></div></div>`).join('')}</div>
+      <div id="gtip" style="display:none;position:absolute;z-index:5;pointer-events:none;background:var(--card);color:var(--tx);border:1px solid var(--bd);box-shadow:0 6px 20px rgba(0,0,0,.18);border-radius:10px;padding:8px 10px;font-size:13px;white-space:nowrap"></div></div></div>
+    <div style="display:flex;gap:6px;margin-left:50px">${mn.map((x) => `<span class="mu" style="flex:1;text-align:center;font-size:11px">${x}</span>`).join('')}</div>
+    <div class="row" style="gap:14px;justify-content:center;font-size:12px;margin-top:6px"><span><span style="display:inline-block;width:10px;height:10px;background:#7dd3e8;border-radius:2px"></span> Uitgaven</span><span><span style="display:inline-block;width:10px;height:10px;background:#f5d76e;border-radius:2px"></span> Inkomsten</span><span class="mu">· wijs een maand aan (of tik erop) voor de bedragen</span></div>`;
+}
+function gTip(el, aan) {
+  const t = document.getElementById('gtip'); if (!t) return; const m = window._gData; if (!m) return;
+  document.querySelectorAll('.gmaand').forEach((x) => x.style.background = '');
+  if (!aan) { if (!t.dataset.vast) t.style.display = 'none'; return; }
+  if (aan === 2) t.dataset.vast = t.dataset.vast === el.dataset.i ? '' : el.dataset.i; else if (t.dataset.vast && t.dataset.vast !== el.dataset.i) return;
+  if (aan === 2 && !t.dataset.vast) { t.style.display = 'none'; return; }
+  const i = +el.dataset.i, x = m.d[i]; el.style.background = 'var(--ac2)';
+  t.innerHTML = `<b>${m.mn[i]} ${m.j}</b><div style="display:flex;justify-content:space-between;gap:14px;margin-top:4px"><span><span style="display:inline-block;width:8px;height:8px;background:#f5d76e;border-radius:2px"></span> Inkomsten</span><b>${eur(x.in)}</b></div><div style="display:flex;justify-content:space-between;gap:14px"><span><span style="display:inline-block;width:8px;height:8px;background:#7dd3e8;border-radius:2px"></span> Uitgaven</span><b>${eur(x.uit)}</b></div><div style="display:flex;justify-content:space-between;gap:14px;border-top:1px solid var(--bd);margin-top:4px;padding-top:4px"><span>Resultaat</span><b style="color:${x.in - x.uit >= 0 ? 'var(--ok)' : 'var(--rd)'}">${eur(x.in - x.uit)}</b></div>`;
+  t.style.display = 'block'; const p = el.parentElement.parentElement.getBoundingClientRect(), r = el.getBoundingClientRect();
+  let left = r.left - p.left + r.width / 2 - t.offsetWidth / 2; left = Math.max(0, Math.min(left, p.width - t.offsetWidth)); t.style.left = left + 'px'; t.style.top = '4px';
 }
 
 /* ---------------- leveranciers ---------------- */
