@@ -63,7 +63,16 @@ function dashboardBoven() {
 }
 
 /* ---------------- leveranciers ---------------- */
+// leveranciers aanvullen uit je kosten (naam + meest gebruikte kostencategorie)
+function levUitKosten() {
+  if (RO) return 0; S.leveranciers = S.leveranciers || []; const per = {};
+  (S.uitgaven || []).forEach((u) => { const n = (u.leverancier || '').trim(); if (!n) return; const k = n.toLowerCase(); const p = per[k] = per[k] || { n, kc: {} }; p.kc[u.kc] = (p.kc[u.kc] || 0) + 1; });
+  let nieuw = 0;
+  Object.entries(per).forEach(([k, p]) => { if (S.leveranciers.some((x) => (x.n || '').trim().toLowerCase() === k)) return; const kc = Object.entries(p.kc).sort((a, b) => b[1] - a[1])[0][0]; S.leveranciers.push({ id: uid('v'), n: p.n, btw: '', kc, adres: '' }); nieuw++; });
+  if (nieuw) save(); return nieuw;
+}
 function vLeveranciers() {
+  levUitKosten();
   const q = (filt.lq || '').toLowerCase(); const cats = alleCats();
   const l = (S.leveranciers || []).filter((x) => !q || [x.n, x.btw, x.mail].join(' ').toLowerCase().includes(q)).sort((a, b) => (a.n || '').localeCompare(b.n || ''));
   const tot = (n) => (S.uitgaven || []).filter((u) => (u.leverancier || '').trim().toLowerCase() === (n || '').trim().toLowerCase()).reduce((s, u) => s + kostVan(u).bb, 0);
