@@ -25,13 +25,15 @@ function kostVan(u, jaar) {
   const beroep = (u.beroep != null && u.beroep !== '' ? C.num(u.beroep) : c.beroep) / 100;
   const aftrek = (u.aftrek != null && u.aftrek !== '' ? C.num(u.aftrek) : c.btw) / 100;
   let basis = 0, btw = 0; (u.tarieven || []).forEach((t) => { basis += C.num(t.basis); btw += !u.regime || u.regime === 'normaal' ? C.num(t.btw) : 0; });
-  const bb = C.r2((basis + btw * (1 - aftrek)) * s);
+  // zoals Dexxter: berekeningsbasis = excl. btw + het niet-aftrekbare deel van de btw dat bij het beroepsdeel hoort
+  const bb = C.r2((basis + btw * (beroep > 0 ? Math.max(0, 1 - aftrek / beroep) : 0)) * s);
   const kost = C.r2(bb * beroep);
   let verwPct = (c.verworpen || 0) / 100;
   if (c.soort === 'wagen') { const w = (S.wagens || []).find((x) => x.id === u.voertuig); if (w) verwPct = 1 - RL.autoAftrek(w, jaar || jaarVan(u.datum)) / 100; }
   return { c, bb, kost, verworpen: C.r2(kost * verwPct), beroep, aftrek, btwAftrek: C.r2(btw * aftrek * s) };
 }
-function omzetJaar(j) { return C.r2(S.docs.filter((d) => d.status !== 'concept' && d.status !== 'geannuleerd' && ['factuur', 'voorschot', 'creditnota'].includes(d.type) && jaarVan(d.datum) === j).reduce((s, d) => s + (d.type === 'creditnota' ? -1 : 1) * C.totalen(d).ex, 0)); }
+function omzetJaar(j) { return C.r2(omzetDocs(j) + (S.dagontv || []).filter((x) => jaarVan(x.datum) === j).reduce((t, x) => t + C.num(x.ex), 0)); }
+function omzetDocs(j) { return C.r2(S.docs.filter((d) => d.status !== 'concept' && d.status !== 'geannuleerd' && ['factuur', 'voorschot', 'creditnota'].includes(d.type) && jaarVan(d.datum) === j).reduce((s, d) => s + (d.type === 'creditnota' ? -1 : 1) * C.totalen(d).ex, 0)); }
 function afschrJaar(j) {
   let t = 0; const lijst = [];
   (S.invest || []).forEach((inv) => { const r = RL.afschrijvingTabel(inv).find((x) => x.jaar === j); if (r) { const a = C.r2(r.afschrijving * (C.num(inv.beroep || 100) / 100)); t += a; lijst.push({ inv, r, a }); } });
@@ -47,8 +49,9 @@ function winstJaar(j) {
     const p = per[k.c.id] = per[k.c.id] || { c: k.c, bb: 0, kost: 0, verworpen: 0, n: 0 }; p.bb += k.bb; p.kost += k.kost; p.verworpen += k.verworpen; p.n++;
   });
   const af = afschrJaar(j);
-  const winst = C.r2(omzet - kosten - af.tot + verworpen);
-  return { omzet, kosten: C.r2(kosten), afschr: af.tot, verworpen: C.r2(verworpen), winst, per, handel: C.r2(handel), onder: C.r2(onder), rsz: C.r2(rsz), vapz: C.r2(vapz), afLijst: af.lijst };
+  const vr = (S.voorraad || {})[j] || {}; const voorraadW = C.r2(C.num(vr.eind) - C.num(vr.begin ?? ((S.voorraad || {})[j - 1] || {}).eind));
+  const winst = C.r2(omzet - kosten - af.tot + verworpen + voorraadW);
+  return { omzet, voorraadW, kosten: C.r2(kosten), afschr: af.tot, verworpen: C.r2(verworpen), winst, per, handel: C.r2(handel), onder: C.r2(onder), rsz: C.r2(rsz), vapz: C.r2(vapz), afLijst: af.lijst };
 }
 
 /* ---------------- sociale bijdragen (zoals Dexxter: winst omgerekend naar een volledig jaar) ---------------- */
@@ -160,7 +163,7 @@ function vUitgave() {
   <h1>${esc(u.leverancier || 'Nieuwe kost')}</h1>
   <div class="kgrid"><div>
   <div class="c"><h2>Factuur / ticket</h2>
-    ${inp('Leverancier', 'U.leverancier')}<div class="cols">${inp('Factuurnummer', 'U.nr')}${inp('Datum', 'U.datum', { type: 'date' })}</div>${inp('Omschrijving', 'U.oms')}
+    ${`<label class="f"><span>Leverancier</span><input ${RO ? 'readonly' : ''} list="levlijst" value="${esc(curUitgave().leverancier || '')}" oninput="set('U.leverancier',this.value)" onchange="window.levKies&&levKies(this.value)"></label><datalist id="levlijst">${(S.leveranciers || []).map((x) => `<option value="${esc(x.n)}">`).join('')}</datalist>`}<div class="cols">${inp('Factuurnummer', 'U.nr')}${inp('Datum', 'U.datum', { type: 'date' })}</div>${inp('Omschrijving', 'U.oms')}
     <label class="f"><span>Kostencategorie</span><select ${ro ? 'disabled' : ''} onchange="kostCat(this.value)">${groepen.map((g) => `<optgroup label="${esc(g)}">${alleCats().filter((x) => x.h === g).map((x) => `<option value="${x.id}" ${x.id === c.id ? 'selected' : ''}>${esc(x.n)}</option>`).join('')}</optgroup>`).join('')}</select></label>
     ${c.oms ? `<p class="mu" style="margin:-4px 0 8px">${esc(c.oms)}</p>` : ''}
     ${['wagen', 'vracht', 'moto'].includes(c.soort) ? `<label class="f"><span>Voertuig</span><select ${ro ? 'disabled' : ''} onchange="set('U.voertuig',this.value);R()"><option value="">— kies —</option>${(S.wagens || []).map((w) => `<option value="${w.id}" ${u.voertuig === w.id ? 'selected' : ''}>${esc(w.naam)}</option>`).join('')}</select></label>${!(S.wagens || []).length ? `<p class="mu">Voeg eerst je voertuig toe bij <a class="lnk" onclick="go('wagens')">Auto's</a>.</p>` : ''}` : ''}

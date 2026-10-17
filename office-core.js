@@ -82,6 +82,7 @@
         }
       });
     });
+    (C.dagontv || []).filter((x) => C.inKwartaal(x.datum, j, q)).forEach((x) => { const code = R.btwCodes[String(x.btw)] || R.btwCodes['21']; if (code.rooster) { add(code.rooster, C.num(x.ex)); if (['01', '02', '03'].includes(code.rooster)) add('54', C.num(x.btwBedrag)); } });
     uitgaven.filter((u) => !u.privé && C.inKwartaal(u.datum, j, q)).forEach((u) => {
       details.aankopen.push(u);
       const cat = u.cat || '82';

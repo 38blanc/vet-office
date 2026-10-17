@@ -15,9 +15,7 @@ function vHome() {
   const tf = teFactureren(); const nieuweA = EXT.aanvragen.filter((a) => !(S.aanvraagSt[a.id] || {}).st && !S.aanvraagWeg[a.id]);
   const binnenkort = EXT.jobs.filter((x) => { const n = volgendeControle(x); return n && n <= C.addDays(today(), 45) && n >= C.addDays(today(), -60); });
   return `<h1>Overzicht</h1>
-  <div class="grid">
-    <div class="c kpi"><h2>Omzet ${j}</h2><div class="v">${eur(w.omzet)}</div><div class="s">dit kwartaal ${eur(omzetQ)} · excl. btw</div></div>
-    <div class="c kpi" style="cursor:pointer" onclick="filt.st='';go('facturen')"><h2>Openstaand</h2><div class="v">${eur(open.reduce((s, d) => s + C.totalen(d).open, 0))}</div><div class="s">${open.length} facturen${verv.length ? ` · <b style="color:var(--rd)">${verv.length} vervallen</b>` : ''}</div></div>
+  <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(240px,1fr))">
     <div class="c kpi" style="cursor:pointer" onclick="go('btw')"><h2>Btw Q${k.q} ${k.j}</h2><div class="v">${rb.g['72'] ? '+ ' + eur(rb.g['72']) : eur(rb.g['71'] || 0)}</div><div class="s">${rb.g['72'] ? 'terug te krijgen' : 'te betalen'} (tot nu)</div></div>
     <div class="c kpi" style="cursor:pointer" onclick="go('belasting')"><h2>Belastingen ${j}</h2><div class="v">${bel.nog >= 0 ? eur(bel.nog) : '+ ' + eur(-bel.nog)}</div><div class="s">${bel.nog >= 0 ? 'nog te betalen (raming)' : 'terug (raming)'} · winst ${eur(w.winst)}</div></div>
   </div>

@@ -105,7 +105,8 @@ function dexxterImport(x) {
       const id = 'dx' + e.id + (i ? '-' + i : '');
       const kc = DX_LED[b.led] || DX_TPL[b.ledT] || 'overige-diensten'; const c = cats.find((y) => y.id === kc) || cats[0];
       const eu = /EU/.test(e.levType || '') && !/OUTSIDE/.test(e.levType || '');
-      const regime = (b.verl || b.med) ? (eu ? 'icdienst' : 'verlegd') : 'normaal';
+      const geenBtw = Math.abs((b.inc ?? b.ex) - (b.ex || 0)) < 0.005;
+      const regime = (b.verl || b.med) ? (eu ? 'icdienst' : 'verlegd') : (eu && geenBtw && (b.ex || 0) > 0 && b.aftrek > 0 ? 'icdienst' : 'normaal');
       const ex = C.r2(b.ex || 0), inc = C.r2(b.inc ?? ex), pct = b.btw != null ? b.btw : regime !== 'normaal' ? 21 : ex ? Math.round((inc - ex) / ex * 100) : 0;
       const btw = regime === 'normaal' ? C.r2(inc - ex) : C.r2(ex * pct / 100);
       const u = {
