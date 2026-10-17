@@ -272,8 +272,7 @@ function vInstellingen() {
   if (t === 'cloud') body = `${window.CLOUDCARD ? CLOUDCARD() : ''}<div class="c"><h2>Back-up & export</h2><div class="row wrap"><button class="b2" onclick="exportJson()">Volledige back-up (JSON)</button><button class="b2" onclick="exportBoekhouder()">Export voor boekhouder (zip)</button>${RO ? '' : `<label class="b2" style="padding:9px 14px;border-radius:8px;background:var(--ac2);color:var(--ac);font-weight:600;cursor:pointer">Back-up terugzetten<input type="file" accept=".json" style="display:none" onchange="importJson(this.files[0])"></label>`}</div>
     <p class="mu">De export voor je boekhouder bevat alle facturen (PDF + UBL), aankoopfacturen met bijlagen en een overzicht (CSV) per kwartaal.</p></div>
     ${window.vBackupCloud ? vBackupCloud() : ''}
-    <div class="c"><h2>Thema</h2>${inp('Weergave', 'S.cfg.thema', { sel: [['', 'Automatisch'], ['light', 'Licht'], ['dark', 'Donker']], re: 1 })}</div>`;
-  if (c.thema) document.documentElement.dataset.theme = c.thema; else delete document.documentElement.dataset.theme;
+`;
   return `<h1>Instellingen</h1><div class="chips">${tabs.map(([k, l]) => `<button class="chip ${t === k ? 'on' : ''}" onclick="go('instellingen',null,'${k}')">${l}</button>`).join('')}</div>${body}`;
 }
 function regelSet(j, g, k, val) { S.cfg.regels[j] = S.cfg.regels[j] || {}; S.cfg.regels[j][g] = S.cfg.regels[j][g] || {}; S.cfg.regels[j][g][k] = C.num(val); regelsToepassen(); save(); toast('Regel aangepast'); }
