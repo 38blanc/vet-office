@@ -24,6 +24,7 @@ function vHome() {
     ${verv.length ? `<div class="dl" style="cursor:pointer" onclick="filt.st='vervallen';go('facturen')"><span>⏰ Vervallen facturen (herinnering sturen)</span><b>${verv.length}</b></div>` : ''}
     ${(S.peppolIn || []).filter((p) => !p.verwerkt).length ? `<div class="dl" style="cursor:pointer" onclick="go('peppol')"><span>📥 Nieuwe Peppol-facturen</span><b>${S.peppolIn.filter((p) => !p.verwerkt).length}</b></div>` : ''}
     ${nieuweA.length ? `<div class="dl" style="cursor:pointer" onclick="go('aanvragen')"><span>📞 Nieuwe aanvragen</span><b>${nieuweA.length}</b></div>` : ''}
+    ${window.reviewKandidaten && S.cfg.reviewLink && reviewKandidaten().length ? `<div class="dl" style="cursor:pointer" onclick="go('reviews')"><span>⭐ Klanten om een Google-review vragen</span><b>${reviewKandidaten().length}</b></div>` : ''}
     ${window.ondhOpen && ondhOpen().length ? `<div class="dl" style="cursor:pointer" onclick="go('attesten',null,'binnenkort')"><span>🔥 Onderhoud binnenkort (nog niet herinnerd)</span><b>${ondhOpen().length}</b></div>` : ''}
     ${EXT.jobs.filter(vekaNodig).length ? `<div class="dl" style="cursor:pointer" onclick="go('veka')"><span>📨 VEKA-meldingen te doen</span><b>${EXT.jobs.filter(vekaNodig).length}</b></div>` : ''}
     ${(S.uitgaven || []).filter((u) => u.bron === 'peppol' && !u.gezien).length ? `<div class="dl" style="cursor:pointer" onclick="go('uitgaven')"><span>📥 Nieuwe Peppol-facturen bij je kosten</span><b>${S.uitgaven.filter((u) => u.bron === 'peppol' && !u.gezien).length}</b></div>` : ''}

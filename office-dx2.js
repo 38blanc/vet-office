@@ -5,14 +5,14 @@ Object.defineProperty(C, 'dagontv', { get: () => S.dagontv || [], configurable: 
 nav.length = 0;
 nav.push(
   ['home', '🏠', 'Overzicht'],
-  'Verkopen', ['werkbonnen', '🔧', 'Te factureren'], ['offertes', '📝', 'Offertes'], ['facturen', '🧾', 'Verkoopfacturen'], ['creditnotas', '↩️', "Creditnota's"], ['dagontv', '💶', 'Dagontvangsten'],
+  'Verkopen', ['werkbonnen', '🔧', 'Te factureren'], ['offertes', '📝', 'Offertes'], ['facturen', '🧾', 'Verkoopfacturen'], ['creditnotas', '↩️', "Creditnota's"], ['dagontv', '💶', 'Dagontvangsten'], ['reviews', '⭐', 'Reviews vragen'],
   'Aankopen', ['peppol', '📥', 'Inbox (Peppol)'], ['uitgaven', '💸', 'Kosten'], ['invest', '🛠', 'Afschrijvingen'], ['kostcats', '🏷', 'Kostencategorieën', 'instellingen', 'kostcats'],
   'Bank', ['bank', '🏦', 'Bank'],
   'Btw', ['btw', '📊', 'Btw-aangifte'], ['ic', '🇪🇺', 'IC-aangifte'], ['listing', '📋', 'Klantenlisting', 'btw', 'listing'],
   'Personenbelasting', ['pb-aangifte', '🧾', 'Aangifte', 'belasting', 'aangifte'], ['pb-overzicht', '🧮', 'Overzicht', 'belasting', 'overzicht'], ['pb-va', '💳', 'Voorafbetalingen', 'belasting', 'va'], ['voorraad', '📦', 'Voorraad'],
   'Sociaal statuut', ['pb-rsz', '🛡', 'Sociale bijdragen', 'belasting', 'rsz'],
   'Planning', ['tijdlijn', '🗓', 'Tijdlijn'],
-  'Rapporten', ['rap-res', '📈', 'Inkomsten & uitgaven', 'rapport', 'resultaat'], ['rap-maand', '📆', 'Per maand', 'rapport', 'maand'], ['rap-open', '⏳', 'Openstaand', 'rapport', 'openstaand'],
+  'Rapporten', ['dagboeken', '📒', 'Dagboeken'], ['rap-res', '📈', 'Inkomsten & uitgaven', 'rapport', 'resultaat'], ['rap-maand', '📆', 'Per maand', 'rapport', 'maand'], ['rap-open', '⏳', 'Openstaand', 'rapport', 'openstaand'],
   'VET-apps', ['veka', '📨', 'VEKA-meldingen'], ['attesten', '🔥', 'Attesten'], ['aanvragen', '📞', 'Aanvragen'],
   'Lijsten', ['art', '📦', 'Verkoopartikelen', 'instellingen', 'artikels'], ['wagens', '🚐', "Auto's"], ['klanten', '👥', 'Klanten'], ['leveranciers', '🏭', 'Leveranciers'],
   'Beheer', ['verz', '🛡', 'Verzekeringen'], ['instellingen', '⚙️', 'Instellingen']
@@ -34,8 +34,8 @@ sideR = function () {
 /* extra schermen in de router */
 const _R0 = R;
 R = function () {
-  const extra = { leveranciers: vLeveranciers, dagontv: vDagontv, voorraad: vVoorraad };
-  if (extra[v]) { sideR(); $('#app').innerHTML = extra[v](); const c2 = $('#cloudst2'); if (c2 && window.CLOUDST) c2.innerHTML = CLOUDST(); return; }
+  const extra = { leveranciers: vLeveranciers, dagontv: vDagontv, voorraad: vVoorraad, dagboeken: window.vDagboeken, reviews: window.vReviews };
+  if (extra[v] && typeof extra[v] === 'function') { sideR(); $('#app').innerHTML = extra[v](); const c2 = $('#cloudst2'); if (c2 && window.CLOUDST) c2.innerHTML = CLOUDST(); return; }
   _R0();
   if (v === 'home') dashboardBoven();
 };

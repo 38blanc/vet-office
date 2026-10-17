@@ -21,7 +21,7 @@ const CLOUD = VETSync.create({
     if (S.artikelsKlaar || (S.artikels || []).length) { S.artikelsKlaar = true; } if (S.artikelsKlaar) out.push({ app: 'shared', kind: 'articles', id: 'main', data: { list: (S.artikels || []).map(artikelShared) } });
     (S.werkUit || []).forEach((o) => out.push({ app: 'work', kind: 'order', id: o.id, data: o })); // nieuwe werkbonnen voor VET Work (nummer geeft Work)
     Object.entries(S.aanvraagUit || {}).forEach(([id, u]) => { const a = EXT.aanvragen.find((x) => x.id === id); if (a && !u.ok && !S.aanvraagWeg[id]) { const d = Object.assign({}, a, { status: u.status, statusDoor: 'office' }); delete d.id; out.push({ app: 'secretaris', kind: 'aanvraag', id, data: d }); } });
-    out.push({ app: 'office', kind: 'settings', id: 'main', data: { cfg: S.cfg, seq: S.seq, artikels: S.artikels, aang: S.aang, bel: S.bel, aanvraagSt: S.aanvraagSt, aanvraagWeg: S.aanvraagWeg, onderhoudMail: S.onderhoudMail, leveranciers: S.leveranciers, dagontv: S.dagontv, voorraad: S.voorraad, dexxterImport: S.dexxterImport, bank: { rek: S.bank.rek, koppeling: S.bank.koppeling }, invest: S.invest, wagens: S.wagens, verz: S.verz, ic: S.ic, log: (S.log || []).slice(-300) } });
+    out.push({ app: 'office', kind: 'settings', id: 'main', data: { cfg: S.cfg, seq: S.seq, artikels: S.artikels, aang: S.aang, bel: S.bel, aanvraagSt: S.aanvraagSt, aanvraagWeg: S.aanvraagWeg, onderhoudMail: S.onderhoudMail, leveranciers: S.leveranciers, reviewGevraagd: S.reviewGevraagd, dagontv: S.dagontv, voorraad: S.voorraad, dexxterImport: S.dexxterImport, bank: { rek: S.bank.rek, koppeling: S.bank.koppeling }, invest: S.invest, wagens: S.wagens, verz: S.verz, ic: S.ic, log: (S.log || []).slice(-300) } });
     return out;
   },
   async apply(rows) {
@@ -33,7 +33,7 @@ const CLOUD = VETSync.create({
         else if (r.kind === 'banktx') { S.bank.tx = S.bank.tx || []; const i = S.bank.tx.findIndex((x) => x.id === r.id); if (del) { if (i > -1) S.bank.tx.splice(i, 1); } else if (i > -1) S.bank.tx[i] = d; else S.bank.tx.push(d); }
         else if (r.kind === 'klantx') { if (del) delete S.klantx[r.id]; else S.klantx[r.id] = d; }
         else if (r.kind === 'settings' && !del) {
-          if (d.cfg) S.cfg = Object.assign(nieuweCfg(), d.cfg); ['seq', 'aang', 'bel', 'aanvraagSt', 'aanvraagWeg', 'onderhoudMail', 'leveranciers', 'dagontv', 'voorraad', 'dexxterImport', 'invest', 'wagens', 'verz', 'ic'].forEach((k) => { if (d[k]) S[k] = d[k]; }); if (d.aanvraagWeg) EXT.aanvragen = EXT.aanvragen.filter((a) => !S.aanvraagWeg[a.id]); if (d.artikels && !S.artikelsKlaar && !(S.artikels || []).length) S.artikels = d.artikels;
+          if (d.cfg) S.cfg = Object.assign(nieuweCfg(), d.cfg); ['seq', 'aang', 'bel', 'aanvraagSt', 'aanvraagWeg', 'onderhoudMail', 'leveranciers', 'reviewGevraagd', 'dagontv', 'voorraad', 'dexxterImport', 'invest', 'wagens', 'verz', 'ic'].forEach((k) => { if (d[k]) S[k] = d[k]; }); if (d.aanvraagWeg) EXT.aanvragen = EXT.aanvragen.filter((a) => !S.aanvraagWeg[a.id]); if (d.artikels && !S.artikelsKlaar && !(S.artikels || []).length) S.artikels = d.artikels;
           if (d.bank) { S.bank.rek = d.bank.rek || S.bank.rek; S.bank.koppeling = d.bank.koppeling || null; } if (d.log) S.log = d.log; regelsToepassen();
         }
       } else if (r.app === 'shared' && r.kind === 'veka') { if (del) delete S.veka[r.id]; else S.veka[r.id] = d;

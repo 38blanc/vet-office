@@ -230,6 +230,7 @@ function vDoc() {
     if (d.status !== 'concept') akties.push(`<button class="b2" onclick="verstuur()">Versturen…</button>`);
     if (isFactuur(d) && d.status !== 'concept' && !afgehandeld(d)) akties.push(`<button class="gr" onclick="betaling()">Betaling registreren</button>`);
     if (window.herinnerKan && herinnerKan(d)) akties.push(`<button class="b2" onclick="herinnering()">⏰ ${(d.herinneringen || []).length ? 'Aanmaning' : 'Herinnering'}</button>`);
+    if (d.type === 'offerte' && d.status !== 'concept' && window.offerteLink && !(d.online && d.online.status === 'open')) akties.push(`<button onclick="offerteLink()">🔗 Online laten goedkeuren</button>`);
     if (d.type === 'offerte' && d.status !== 'concept') akties.push(`<button class="b2" onclick="offerteNaar('factuur')">→ Factuur</button><button class="b2" onclick="offerteNaar('voorschot')">→ Voorschotfactuur</button><select style="width:auto;margin:0" onchange="set('D.status',this.value);R()">${['verzonden', 'aanvaard', 'geweigerd', 'gefactureerd'].map((s) => `<option ${d.status === s ? 'selected' : ''}>${s}</option>`).join('')}</select>`);
     if (isFactuur(d) && d.status !== 'concept') akties.push(`<button class="b2" onclick="maakCreditnota('${d.id}')">Creditnota</button>`);
     if (d.type === 'factuur' && d.status === 'concept') akties.push(`<button class="b2" onclick="voorschotVerrekenen()">Voorschot verrekenen</button>`);
@@ -264,7 +265,7 @@ function vDoc() {
     ${verm.length ? `<div class="mu">Wordt automatisch toegevoegd (wettelijke vermeldingen):<ul style="margin:4px 0 0 18px;padding:0">${verm.map((x) => `<li>${esc(x.slice(0, 140))}${x.length > 140 ? '…' : ''}</li>`).join('')}</ul></div>` : ''}
   </div>
   ${isFactuur(d) && (d.betalingen || []).length ? `<div class="c"><h2>Betalingen</h2>${d.betalingen.map((b, i) => `<div class="dl"><span>${dt(b.datum)} · ${esc(b.via || 'overschrijving')}</span><span class="row"><b class="tab">${eur(b.bedrag)}</b>${RO ? '' : `<button class="lnk" onclick="betalingWeg(${i})">✕</button>`}</span></div>`).join('')}<div class="dl"><span>Nog open</span><b>${eur(t.open)}</b></div></div>` : ''}
-  ${window.vHerHist ? vHerHist(d) : ''}
+  ${window.vHerHist ? vHerHist(d) : ''}${window.vOnline ? vOnline(d) : ''}
   ${d.peppol ? `<div class="c"><h2>Peppol</h2><div class="dl"><span>Status</span><b>${esc(d.peppol.status || '')}</b></div><div class="dl"><span>Verzonden</span><span>${esc((d.peppol.datum || '').replace('T', ' ').slice(0, 16))}</span></div><div class="dl"><span>Ontvanger</span><span>${esc(d.peppol.naar || '')}</span></div></div>` : ''}
   <div class="c"><h2>Bijlagen (gaan mee met de factuur)</h2>${(d.bijlagen || []).map((b, i) => `<div class="dl"><span>${b.soort === 'werkbon' ? '🔧' : b.soort === 'attest' ? '🔥' : '📎'} ${esc(b.naam)}</span><span class="row"><button class="lnk sm" onclick="bestandOpen(curDoc().bijlagen[${i}].ref)">Openen</button>${RO ? '' : `<button class="lnk sm" onclick="curDoc().bijlagen.splice(${i},1);save();R()">✕</button>`}</span></div>`).join('') || '<p class="mu">Geen bijlagen.</p>'}${RO ? '' : `<label class="btnl b2l" style="margin-top:6px">+ Bijlage (PDF)<input type="file" accept="application/pdf,image/*" style="display:none" onchange="bijlageDoc(this.files[0])"></label>`}</div>
   ${d.archief ? `<div class="c"><h2>Archief (10 jaar bewaren)</h2><div class="row wrap"><button class="b2 sm" onclick="archiefOpen('pdf')">Origineel PDF</button><button class="b2 sm" onclick="archiefOpen('ubl')">UBL (Peppol-XML)</button><span class="mu">vastgelegd op ${esc(String(d.archief.datum || '').slice(0, 10))}</span></div></div>` : ''}
@@ -438,8 +439,8 @@ function vKlant() {
     ${inp('Factuur-e-mail (indien anders)', `S.klantx.${k.id}.email`)}
     ${x.type === 'aannemer' ? '<p class="mu">Nieuwe lijnen voor deze klant krijgen automatisch "Verlegd". Peppol is verplicht.</p>' : ''}
   </div></div>
-  ${docs.length ? `<div class="c"><h2>Documenten</h2>${docs.map((d) => `<div class="dl" style="cursor:pointer" onclick="go('doc','${d.id}')"><span>${TYPENAAM[d.type]} <b>${esc(d.nr || 'concept')}</b> · ${dt(d.datum)}</span><span class="row">${eur(C.totalen(d).inc)} ${tagSt(d)}</span></div>`).join('')}</div>` : ''}
-  ${jobs.length ? `<div class="c"><h2>Onderhoudsattesten (VET Heat)</h2>${jobs.map((j) => `<div class="dl"><span>${esc(j.nr)} · ${dt(j.datum)}</span><span class="mu">volgende: ${esc(volgendeControle(j) ? dt(volgendeControle(j)) : '—')}</span></div>`).join('')}</div>` : ''}
+  ${window.klantDossier ? klantDossier(k) : ''}${window.klantDossier ? '' : docs.length ? `<div class="c"><h2>Documenten</h2>${docs.map((d) => `<div class="dl" style="cursor:pointer" onclick="go('doc','${d.id}')"><span>${TYPENAAM[d.type]} <b>${esc(d.nr || 'concept')}</b> · ${dt(d.datum)}</span><span class="row">${eur(C.totalen(d).inc)} ${tagSt(d)}</span></div>`).join('')}</div>` : ''}
+  ${!window.klantDossier && jobs.length ? `<div class="c"><h2>Onderhoudsattesten (VET Heat)</h2>${jobs.map((j) => `<div class="dl"><span>${esc(j.nr)} · ${dt(j.datum)}</span><span class="mu">volgende: ${esc(volgendeControle(j) ? dt(volgendeControle(j)) : '—')}</span></div>`).join('')}</div>` : ''}
   ${RO ? '' : `<button class="red" onclick="klantWeg('${k.id}')">Klant verwijderen</button>`}`;
 }
 function klantTerug(id) { const d = S.docs.find((x) => x.id === id); const k = S.klanten.find((x) => x.id === (d.klant || {}).id); if (d && k && d.status === 'concept') { d.klant = klantSnapshot(k); if ((S.klantx[k.id] || {}).type === 'aannemer') d.lijnen.forEach((l) => l.btw = 'VERL'); save(); } go('doc', id); }

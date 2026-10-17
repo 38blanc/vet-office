@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<title>Offerte – Van Eyen Technics</title>
+<link rel="icon" href="icon-192.png">
+<style>
+  :root{--bg:#eef1f4;--card:#fff;--tx:#1b2a33;--mu:#5d6b75;--ac:#1b6a8a;--ac2:#e3f0f5;--bd:#dde3e8;--gr:#2e8c62;--rd:#c0392b}
+  @media (prefers-color-scheme:dark){:root{--bg:#121a1f;--card:#1b252c;--tx:#e8eef2;--mu:#9aa9b3;--ac:#5fb4d6;--ac2:#1f3440;--bd:#2c3943}}
+  *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
+  .w{max-width:760px;margin:0 auto;padding:20px 16px 60px}.c{background:var(--card);border-radius:14px;padding:20px;margin-bottom:14px;box-shadow:0 2px 12px rgba(0,0,0,.05)}
+  header{display:flex;align-items:center;gap:14px;margin-bottom:14px}header img{height:54px}header b{font-size:18px}.mu{color:var(--mu)}
+  h1{font-size:22px;margin:0 0 4px}table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:8px 6px;border-bottom:1px solid var(--bd);text-align:left;vertical-align:top}th{color:var(--mu);font-weight:600;font-size:12px}.r{text-align:right;white-space:nowrap}
+  .tot div{display:flex;justify-content:space-between;padding:3px 0}.tot .big{font-size:19px;font-weight:700;border-top:2px solid var(--tx);margin-top:6px;padding-top:8px}
+  .cols{display:grid;grid-template-columns:1fr 1fr;gap:14px}@media(max-width:560px){.cols{grid-template-columns:1fr}}
+  input,textarea{width:100%;padding:11px 12px;border-radius:10px;border:1px solid var(--bd);background:var(--bg);color:var(--tx);font:16px system-ui;margin:4px 0 10px}
+  button{border:0;border-radius:10px;padding:13px 16px;font:700 16px system-ui;cursor:pointer}.ok{background:var(--gr);color:#fff;width:100%}.nee{background:transparent;color:var(--rd);text-decoration:underline;font-weight:600;padding:8px}
+  .b2{background:var(--ac2);color:var(--ac)}.ban{border-radius:12px;padding:14px 16px;margin-bottom:14px;font-weight:600}.ban.g{background:#e3f4ec;color:#1e6b49}.ban.r{background:#fbe9e7;color:#9b2c20}.ban.b{background:var(--ac2);color:var(--ac)}
+  label.chk{display:flex;gap:10px;align-items:flex-start;margin:6px 0 14px}label.chk input{width:22px;height:22px;margin:2px 0 0;flex-shrink:0}
+  .det{color:var(--mu);font-size:13px;white-space:pre-line}
+</style>
+</head>
+<body><div class="w" id="app"><div class="c">Offerte laden…</div></div>
+<script>
+const URL_ = 'https://pfxxzzdyzitcuhfrxaiq.supabase.co';
+const KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBmeHh6emR5eml0Y3VoZnJ4YWlxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE3MTY3NjYsImV4cCI6MjEwNzI5Mjc2Nn0.yQFcLi4G3z4A60LgJdtUvAqYtGtC_IqMU6hxOaZws8I';
+const token = location.hash.slice(1);
+const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const eur = (x) => '€ ' + Number(x || 0).toLocaleString('nl-BE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const dt = (d) => d ? d.slice(8, 10) + '-' + d.slice(5, 7) + '-' + d.slice(0, 4) : '';
+const rpc = async (f, body) => { const r = await fetch(URL_ + '/rest/v1/rpc/' + f, { method: 'POST', headers: { apikey: KEY, Authorization: 'Bearer ' + KEY, 'Content-Type': 'application/json' }, body: JSON.stringify(body) }); const t = await r.text(); if (!r.ok) { let m = t; try { m = JSON.parse(t).message; } catch (e) {} throw new Error(m); } return t ? JSON.parse(t) : null; };
+let O = null;
+async function laad() {
+  if (!/^[0-9a-f]{24,}$/.test(token)) return fout('Deze link is niet geldig.');
+  try { O = await rpc('vet_offerte_bekijk', { p_token: token }); } catch (e) { return fout('De offerte kon niet geladen worden. Probeer later opnieuw.'); }
+  if (!O) return fout('Deze offerte bestaat niet (meer). Neem contact op met Van Eyen Technics.');
+  toon();
+}
+function fout(t) { document.getElementById('app').innerHTML = `<div class="c"><h1>Offerte</h1><p>${esc(t)}</p></div>`; }
+function toon(melding) {
+  const d = O.data, b = d.bedrijf || {}, k = d.klant || {}; const verlopen = O.geldig_tot && O.geldig_tot < new Date().toISOString().slice(0, 10);
+  document.title = 'Offerte ' + d.nr + ' – ' + (b.naam || '');
+  const st = O.status === 'aanvaard' ? `<div class="ban g">✓ Deze offerte werd goedgekeurd door ${esc(O.naam)} op ${dt(String(O.beslist_op).slice(0, 10))}. Bedankt! U wordt gecontacteerd voor de verdere planning.</div>`
+    : O.status === 'geweigerd' ? `<div class="ban r">Deze offerte werd geweigerd door ${esc(O.naam)}. Toch nog vragen? Neem gerust contact op.</div>`
+    : verlopen ? `<div class="ban r">Deze offerte was geldig tot ${dt(O.geldig_tot)}. Neem contact op voor een nieuwe offerte.</div>` : '';
+  document.getElementById('app').innerHTML = `
+  <header><img src="logo-factuur.png" alt=""><div><b>${esc(b.naam)}</b><div class="mu" style="font-size:13px">${esc([b.straat, b.pc].filter(Boolean).join(', '))} · ${esc(b.btw || '')}</div></div></header>
+  ${melding || ''}${st}
+  <div class="c"><h1>Offerte ${esc(d.nr)}</h1><div class="mu">Datum ${dt(d.datum)}${d.geldig ? ' · geldig tot ' + dt(d.geldig) : ''}</div>
+    <div class="cols" style="margin-top:14px"><div><div class="mu" style="font-size:12px">VOOR</div><b>${esc(k.naam)}</b><div>${esc(k.straat || '')}</div><div>${esc(k.pc || '')}</div></div>
+    <div><div class="mu" style="font-size:12px">CONTACT</div><div>${esc(b.persoon || b.naam)}</div><div>${b.tel ? `<a href="tel:${esc(b.tel)}">${esc(b.tel)}</a>` : ''}</div><div>${b.email ? `<a href="mailto:${esc(b.email)}">${esc(b.email)}</a>` : ''}</div></div></div></div>
+  <div class="c" style="overflow:auto"><table><tr><th>Omschrijving</th><th class="r">Aantal</th><th class="r">Prijs</th><th class="r">Btw</th><th class="r">Totaal</th></tr>
+    ${(d.lijnen || []).map((l) => `<tr><td><b>${esc(l.oms)}</b>${l.det ? `<div class="det">${esc(l.det)}</div>` : ''}</td><td class="r">${esc(l.aantal)} ${esc(l.eenheid || '')}</td><td class="r">${eur(l.prijs)}</td><td class="r">${esc(l.btw)}</td><td class="r">${eur(l.totaal)}</td></tr>`).join('')}</table>
+    <div class="tot" style="margin-top:12px">${d.korting ? `<div><span>Korting</span><span>− ${eur(d.korting)}</span></div>` : ''}<div><span>Totaal excl. btw</span><b>${eur(d.ex)}</b></div>${(d.groepen || []).map((g) => `<div class="mu"><span>Btw ${esc(g.label)} op ${eur(g.basis)}</span><span>${eur(g.btw)}</span></div>`).join('')}<div class="big"><span>Totaal</span><span>${eur(d.inc)}</span></div></div>
+    ${d.opm ? `<p class="det" style="margin-top:14px">${esc(d.opm)}</p>` : ''}
+    ${d.pdf ? `<p><button class="b2" onclick="pdf()">📄 Offerte als PDF (met algemene voorwaarden)</button></p>` : ''}</div>
+  ${O.status === 'open' && !verlopen ? `<div class="c"><h1 style="font-size:18px">Uw antwoord</h1>
+    <label>Uw naam<input id="nm" autocomplete="name" value="${esc(k.naam || '')}"></label>
+    <label>Opmerking of gewenste periode (optioneel)<textarea id="opm" rows="3"></textarea></label>
+    <label class="chk"><input type="checkbox" id="ok"><span>Ik ga akkoord met offerte ${esc(d.nr)} van ${eur(d.inc)} incl. btw en met de algemene voorwaarden van ${esc(b.naam)}.</span></label>
+    <button class="ok" id="bAk" onclick="beslis('aanvaard')">✓ Offerte goedkeuren</button>
+    <div style="text-align:center;margin-top:8px"><button class="nee" onclick="beslis('geweigerd')">Offerte weigeren</button></div></div>` : ''}
+  <p class="mu" style="text-align:center;font-size:12px">${esc(b.naam)} · ${esc(b.website || '')}</p>`;
+}
+function pdf() { const bin = atob(O.data.pdf); const u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); const url = URL.createObjectURL(new Blob([u], { type: 'application/pdf' })); const a = document.createElement('a'); a.href = url; a.download = O.data.pdfNaam || 'offerte.pdf'; a.target = '_blank'; a.click(); }
+async function beslis(b) {
+  const nm = document.getElementById('nm').value.trim(), opm = document.getElementById('opm').value.trim();
+  if (nm.length < 2) return alert('Vul uw naam in.');
+  if (b === 'aanvaard' && !document.getElementById('ok').checked) return alert('Vink aan dat u akkoord gaat met de offerte en de algemene voorwaarden.');
+  if (b === 'geweigerd' && !confirm('Offerte weigeren?')) return;
+  try { const r = await rpc('vet_offerte_beslis', { p_token: token, p_besluit: b, p_naam: nm, p_opmerking: opm || null }); O.status = r.status; O.naam = nm; O.beslist_op = r.beslist_op; toon(); scrollTo(0, 0); }
+  catch (e) { alert('Dat lukte niet: ' + e.message); }
+}
+laad();
+</script>
+</body>
+</html>
