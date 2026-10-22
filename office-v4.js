@@ -91,7 +91,7 @@ function klantDossier(k) {
   const tl = [];
   aanvr.forEach((a) => tl.push({ d: String(a.ontvangen || '').slice(0, 10), i: '📞', t: 'Aanvraag (' + (a.bron || 'secretaris') + ')', s: a.probleem || a.bericht || '', ga: "go('aanvragen',null,'alle')" }));
   orders.forEach((o) => tl.push({ d: o.datum, i: '🔧', t: 'Werkbon ' + (o.nr || ''), s: (o.omschr || '') + (o.status ? ' · ' + o.status : ''), ga: "go('werkbonnen')" }));
-  jobs.forEach((j) => tl.push({ d: j.datum, i: '🔥', t: 'Attest ' + (j.nr || ''), s: [j.toestel && j.toestel.merk, j.toestel && j.toestel.type].filter(Boolean).join(' ') + (j.verb && j.verb.veilig ? ' · ' + j.verb.veilig : ''), ga: "go('attesten',null,'alle')" }));
+  jobs.forEach((j) => tl.push({ d: j.datum, i: '🔥', t: 'Attest ' + (j.nr || ''), s: [j.toestel && j.toestel.merk, j.toestel && j.toestel.type].filter(Boolean).join(' ') + (j.verb && j.verb.veilig ? ' · ' + j.verb.veilig : '') + (j.sigNiet ? ' · ✍️ niet getekend: ' + sigNietTekst(j) : ''), ga: "go('attesten',null,'alle')" }));
   docs.forEach((d) => { tl.push({ d: d.datum, i: d.type === 'offerte' ? '📝' : d.type === 'creditnota' ? '↩️' : '🧾', t: TYPENAAM[d.type] + ' ' + (d.nr || 'concept'), s: eur(C.totalen(d).inc) + ' · ' + status(d), ga: `go('doc','${d.id}')` }); (d.herinneringen || []).forEach((h) => tl.push({ d: h.datum, i: '⏰', t: (h.niveau === 'herinnering' ? 'Herinnering' : 'Aanmaning') + ' ' + d.nr, s: 'via ' + h.via, ga: `go('doc','${d.id}')` })); });
   if (S.reviewGevraagd && S.reviewGevraagd[k.id]) tl.push({ d: S.reviewGevraagd[k.id], i: '⭐', t: 'Google-review gevraagd', s: '', ga: '' });
   tl.sort((a, b) => String(b.d).localeCompare(String(a.d)));
