@@ -2,7 +2,7 @@
 <html lang="nl"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>VET Office</title>
-<link rel="manifest" href="manifest.webmanifest"><meta name="vet-versie" content="vo-v19"><meta name="theme-color" content="#1b6a8a"><link rel="apple-touch-icon" href="apple-touch-icon.png"><link rel="icon" href="icon-192.png">
+<link rel="manifest" href="manifest.webmanifest"><meta name="vet-versie" content="vo-v20"><meta name="theme-color" content="#1b6a8a"><link rel="apple-touch-icon" href="apple-touch-icon.png"><link rel="icon" href="icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="VET Office">
 <style>
 :root{--bg:#eceff2;--card:#fff;--tx:#14202b;--mu:#617080;--ac:#1b6a8a;--ac2:#e8f2f6;--bd:#d5dbe1;--rd:#c8321c;--ok:#23844a;--gr:#2e8c62;--gr2:#e6f4ec;--or:#c9741a;--or2:#fbf0e3;--side:#14303d;--sidetx:#cfe0e8}
@@ -111,6 +111,23 @@ table.dxlt td{vertical-align:top}.dxtot{max-width:380px}
 .dxside .c{border-radius:12px}.dxside h3{margin:0 0 10px;font-size:17px}
 .dxst{width:100%;background:var(--ac2);color:var(--ac);border:1.5px solid currentColor}.dxst.g{background:var(--gr2);color:var(--gr)}.dxst.o{background:var(--or2);color:var(--or)}.dxst.r2{background:#fde8e4;color:var(--rd)}.dxst.n{background:var(--bg);color:var(--mu)}
 .dxvz{display:flex;gap:10px;align-items:flex-start;padding:6px 0;border-bottom:1px dashed var(--bd)}.dxvz:last-child{border:0}.dxvz .ic{color:var(--gr);font-size:18px;width:22px}
+
+.dxok{display:inline-flex;width:20px;height:20px;border-radius:50%;background:var(--gr);color:#fff;font-size:12px;align-items:center;justify-content:center;font-weight:700;flex:none}.dxok.o{background:var(--or)}
+.dxvw button{padding:8px 12px;font-size:16px}
+.dxkgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px}
+.dxkc{border:1px solid var(--bd);border-radius:12px;padding:12px;cursor:pointer;background:var(--card);display:flex;flex-direction:column;gap:8px}.dxkc:hover{border-color:var(--ac);box-shadow:0 4px 14px rgba(0,0,0,.06)}
+.dxkc .kop{display:flex;gap:8px;align-items:flex-start}.dxkc .kop .nm{flex:1;min-width:0}.dxkc .kop .nm b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dxkc .th{height:190px;border-radius:8px;background:var(--bg);display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative}.dxkc .th img{max-height:100%;max-width:100%;box-shadow:0 2px 8px rgba(0,0,0,.15)}.dxkc .th img:not([src]){display:none}.dxkc .th .pp{position:absolute;top:6px;right:6px}
+.dxkc .vt{display:flex;align-items:center;gap:6px}.dxkc .cat{display:flex;justify-content:space-between;gap:8px;font-size:13.5px;border-top:1px solid var(--bd);padding-top:8px}
+.dxcard.drop{outline:2px dashed var(--ac);outline-offset:-6px}
+.dxudet{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:16px;align-items:start}@media(max-width:1000px){.dxudet{grid-template-columns:1fr}}
+.dxubij .kpv{height:72vh}
+.dxbedr{display:grid;grid-template-columns:1.3fr 1fr .8fr .9fr 34px;gap:0 10px;align-items:end}@media(max-width:560px){.dxbedr{grid-template-columns:1fr 1fr}}
+.dxsum{display:grid;grid-template-columns:120px 1fr;gap:14px 16px}.dxsum .k{color:var(--mu);font-weight:600}.dxkv{display:flex;justify-content:space-between;gap:10px;padding:2px 0;font-size:14px}.dxsum .dxkv{max-width:360px}
+@media(max-width:560px){.dxsum{grid-template-columns:1fr;gap:4px}.dxsum .k{margin-top:10px}}
+tr.dxgrp td{background:var(--bg);border-bottom:1px solid var(--bd)}tr.dxsub td{border-top:1px solid var(--bd)}
+.dxkc .cat b{white-space:nowrap}.dxudet .dxstep{font-size:13px}.dxudet .dxsteps{gap:6px}table.dxt th{white-space:nowrap}
+.dxkcg{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}.dxkcc{margin:0;border-radius:12px;display:flex;flex-direction:column}
 #dxfab{display:none}
 @media(max-width:860px){
  #top{position:sticky;top:0;z-index:15;background:var(--card);margin:-12px -14px 14px;padding:calc(8px + env(safe-area-inset-top,0px)) 12px 8px;border-bottom:1px solid var(--bd);box-shadow:0 2px 8px rgba(0,0,0,.05)}
@@ -146,6 +163,7 @@ table.dxlt td{vertical-align:top}.dxtot{max-width:380px}
 <script src="office-v4.js"></script>
 <script src="office-dx2.js"></script>
 <script src="office-dx3.js"></script>
+<script src="office-dx4.js"></script>
 <script src="vet-sync.js"></script>
 <script src="office-cloud.js"></script>
 <script src="office-start.js"></script>

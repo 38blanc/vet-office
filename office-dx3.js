@@ -83,7 +83,7 @@ function dxMenu(ev, items) {
   ev.stopPropagation(); dxMenuSluit();
   const r = ev.currentTarget.getBoundingClientRect();
   const m = document.createElement('div'); m.id = 'dxmenu';
-  m.innerHTML = items.filter(Boolean).map(([t, k, o = {}]) => o.kop ? `<div class="kop">${t}</div>` : `<div class="it ${o.red ? 'rood' : ''} ${o.dis ? 'dis' : ''} ${o.on ? 'on' : ''}" onclick="${o.dis ? '' : `dxMenuSluit();${k}`}">${t}${o.sub ? `<div class="mu">${o.sub}</div>` : ''}</div>`).join('');
+  m.innerHTML = items.filter(Boolean).map(([t, k, o = {}]) => o.kop ? `<div class="kop">${t}</div>` : `<div class="it ${o.red ? 'rood' : ''} ${o.dis ? 'dis' : ''} ${o.on ? 'on' : ''}" onclick="${o.dis ? '' : esc(`dxMenuSluit();${k}`)}">${t}${o.sub ? `<div class="mu">${o.sub}</div>` : ''}</div>`).join('');
   document.body.appendChild(m);
   const w = m.offsetWidth, h = m.offsetHeight;
   let left = r.right - w; if (left < 8) left = Math.min(r.left, innerWidth - w - 8);
