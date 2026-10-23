@@ -4,7 +4,7 @@
 /* ================= menu als boom (zoals Dexxter) ================= */
 const DXNAV = [
   { k: 'home', i: '🏠', t: 'Dashboard' },
-  { g: 'Inkomsten', i: '💶', items: [['werkbonnen', 'Te factureren (VET)'], ['offertes', 'Offertes'], ['facturen', 'Verkoopfacturen'], ['creditnotas', "Creditnota's"], ['dagontv', 'Dagontvangsten']] },
+  { g: 'Inkomsten', i: '💶', items: [['offertes', 'Offertes'], ['facturen', 'Verkoopfacturen'], ['creditnotas', "Creditnota's"], ['dagontv', 'Dagontvangsten']] },
   { g: 'Uitgaven', i: '💸', items: [['uitgaven', 'Kosten'], ['peppol', 'Inbox (Peppol)'], ['invest', 'Afschrijvingen'], ['kostcats', 'Kostencategorieën', 'instellingen', 'kostcats']] },
   { k: 'bank', i: '🏦', t: 'Bank' },
   { g: 'Aangiftes', i: '📊', items: [['btw', 'Btw-aangifte'], ['ic', 'IC-aangifte'], ['listing', 'Klantenlisting', 'btw', 'listing']] },
@@ -12,7 +12,12 @@ const DXNAV = [
   { k: 'pb-rsz', i: '🛡', t: 'Sociale bijdragen', v: 'belasting', s: 'rsz' },
   { k: 'tijdlijn', i: '🗓', t: 'Tijdlijn' },
   { g: 'Rapporten', i: '📈', items: [['rap-res', 'Inkomsten & uitgaven', 'rapport', 'resultaat'], ['dagboeken', 'Dagboeken'], ['rap-maand', 'Per maand', 'rapport', 'maand'], ['rap-open', 'Openstaand', 'rapport', 'openstaand']] },
-  { g: 'VET-apps', i: '🔥', items: [['attesten', 'Attesten (Heat)'], ['veka', 'VEKA-meldingen'], ['aanvragen', 'Aanvragen (Secretaris)'], ['reviews', 'Reviews vragen']] },
+  'VET-apps',
+  { k: 'werkbonnen', i: '🔧', t: 'Te factureren' },
+  { k: 'attesten', i: '🔥', t: 'Attesten (Heat)' },
+  { k: 'veka', i: '📨', t: 'VEKA-meldingen' },
+  { k: 'aanvragen', i: '📞', t: 'Aanvragen' },
+  { k: 'reviews', i: '⭐', t: 'Reviews vragen' },
   'Beheer',
   { k: 'verz', i: '🛡', t: 'Verzekeringen' },
   { k: 'art', i: '📦', t: 'Verkoopartikelen', v: 'instellingen', s: 'artikels' },
