@@ -2,7 +2,7 @@
 <html lang="nl"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>VET Office</title>
-<link rel="manifest" href="manifest.webmanifest"><meta name="vet-versie" content="vo-v21"><meta name="theme-color" content="#1b6a8a"><link rel="apple-touch-icon" href="apple-touch-icon.png"><link rel="icon" href="icon-192.png">
+<link rel="manifest" href="manifest.webmanifest"><meta name="vet-versie" content="vo-v22"><meta name="theme-color" content="#1b6a8a"><link rel="apple-touch-icon" href="apple-touch-icon.png"><link rel="icon" href="icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="VET Office">
 <style>
 :root{--bg:#eceff2;--card:#fff;--tx:#14202b;--mu:#617080;--ac:#1b6a8a;--ac2:#e8f2f6;--bd:#d5dbe1;--rd:#c8321c;--ok:#23844a;--gr:#2e8c62;--gr2:#e6f4ec;--or:#c9741a;--or2:#fbf0e3;--side:#14303d;--sidetx:#cfe0e8}
@@ -141,6 +141,7 @@ h2.dxh2{color:var(--tx);font-size:19px;font-weight:700;margin:0 0 12px}
 .dxbtw{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:14px;align-items:start}@media(max-width:900px){.dxbtw{grid-template-columns:minmax(0,1fr)}.dxbtw>div:last-child{order:-1}}
 .dxsw{gap:10px;margin-bottom:12px;cursor:pointer;width:max-content}.dxsw input{display:none}.dxsw .sl{width:36px;height:20px;border-radius:99px;background:var(--bd);position:relative;transition:.2s}.dxsw .sl:after{content:'';position:absolute;left:3px;top:3px;width:14px;height:14px;border-radius:50%;background:#fff;transition:.2s}.dxsw input:checked+.sl{background:var(--ac)}.dxsw input:checked+.sl:after{left:19px}
 .dxconc div{padding:3px 0}.dxconc .som{border-top:1px solid var(--tx);margin-top:4px;padding-top:6px;max-width:320px}
+.dxtabs.chips{flex-wrap:nowrap;gap:2px}.dxtabs .chip{background:none;border:0;border-bottom:2px solid transparent;border-radius:0;color:var(--tx);text-transform:uppercase;font-size:12.5px;letter-spacing:.05em;padding:10px 12px;white-space:nowrap}.dxtabs .chip.on{border-bottom-color:var(--tx);background:none;color:var(--tx)}
 #dxfab{display:none}
 @media(max-width:860px){
  #top{position:sticky;top:0;z-index:15;background:var(--card);margin:-12px -14px 14px;padding:calc(8px + env(safe-area-inset-top,0px)) 12px 8px;border-bottom:1px solid var(--bd);box-shadow:0 2px 8px rgba(0,0,0,.05)}

@@ -115,3 +115,7 @@ function dxArtWeg(i) { if (!confirm('Verkoopartikel "' + S.artikels[i].n + '" ve
 DXNAV.forEach((n) => { if (n && n.k === 'art') { delete n.v; delete n.s; } });
 DXV.art = vArtikelsDx;
 DXFAB.art = [['Verkoopartikel toevoegen', 'dxArtForm(-1)', '📦']];
+
+/* tabbladen in instellingen, personenbelasting, rapporten en dagboeken in Dexxter-stijl (onderstreepte tabs) */
+const _R5 = R;
+R = function () { _R5(); if (['instellingen', 'belasting', 'rapport', 'dagboeken', 'attesten', 'aanvragen', 'veka', 'bank'].includes(v)) { const c = $('#app .chips'); if (c && !c.querySelector('.chip.on[onclick*="filt.pg"]')) c.classList.add('dxtabs'); } };
