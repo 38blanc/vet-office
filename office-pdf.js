@@ -104,7 +104,7 @@
     pdf.setDrawColor(...ZWART); pdf.setLineWidth(0.8); pdf.line(350.6, sy, RE, sy); sy += 21;
     totRij(doc.type === 'creditnota' ? 'TE CREDITEREN' : 'TOTAAL', C.eur(t.inc), { big: true, blauw: true });
     // betaal-QR (enkel factuur met openstaand bedrag)
-    if ((doc.type === 'factuur' || doc.type === 'voorschot') && b.iban && t.inc > 0 && !opt.betaaldStempel) {
+    if ((doc.type === 'factuur' || doc.type === 'voorschot') && b.iban && t.inc > 0 && !opt.betaaldStempel && doc.qr !== false) {
       const m = C.qrMatrix(C.epc({ naam: b.naam, iban: b.iban, bic: b.bic, bedrag: t.open > 0 ? t.open : t.inc, ogm: doc.ogm || doc.nr }));
       const size = 62, cell = size / m.length; pdf.setFillColor(0, 0, 0);
       m.forEach((r, ri) => r.forEach((d, ci) => { if (d) pdf.rect(L + ci * cell, qrY - 9 + ri * cell, cell + 0.05, cell + 0.05, 'F'); }));
